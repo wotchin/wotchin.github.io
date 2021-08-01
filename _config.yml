@@ -5,11 +5,11 @@
 # Site
 title: wotchin的随想录
 subtitle: 'wotchin的博客: 知识 技能 思考'
-description: "wotchin's blog"
+description: "wotchin's selected posts"
 keywords: wotchin
 author: Wotchin
 language: zh-CN
-timezone: ''
+timezone: 'Asia/Shanghai'
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
