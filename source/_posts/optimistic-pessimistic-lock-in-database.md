@@ -1,6 +1,10 @@
 ﻿---
 title: 数据库中的乐观锁与悲观锁初步
-category: 业务系统
+category: Chinese
+date: 2020-02-10
+tags:
+  - database
+  - software-engineering
 ---
 
 # 数据库与并发业务

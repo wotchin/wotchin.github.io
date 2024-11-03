@@ -3,12 +3,12 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: wotchin的记事本
-subtitle: "wotchin' notepad"
+title: Wotchin's Blog and Notebook
+subtitle: Dive into and discuss all my interests
 description: "wotchin's selected posts"
 keywords: wotchin
 author: Wotchin
-language: zh-CN
+language: en
 timezone: 'Asia/Shanghai'
 
 # URL

@@ -1,6 +1,8 @@
 ---
 title: IO 多路复用的 select, poll, epoll 之间的区别和联系总结
-category: 操作系统
+category: Chinese
+date: 2018-01-01
+tags: operation-system
 ---
 
 IO 多路复用
