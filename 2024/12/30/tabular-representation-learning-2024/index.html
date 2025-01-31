@@ -1,0 +1,93 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="wotchin's selected posts"><title>站在2024年，回看表格数据表示学习（tabular representation learning, TRL）进展和趋势 | Wotchin's Blog and Notebook</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 7.3.0"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">站在2024年，回看表格数据表示学习（tabular representation learning, TRL）进展和趋势</h1><a id="logo" href="/.">Wotchin's Blog and Notebook</a><p class="description">Dive into and discuss all my interests -- find me via X @real_wotchin</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> Home</i></a><a href="/archives/"><i class="fa fa-archive"> Archive</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">站在2024年，回看表格数据表示学习（tabular representation learning, TRL）进展和趋势</h1><div class="post-meta">2024-12-30<span> | </span><span class="category"><a href="/categories/Chinese/">Chinese</a></span></div><a class="disqus-comment-count" data-disqus-identifier="2024/12/30/tabular-representation-learning-2024/" href="/2024/12/30/tabular-representation-learning-2024/#disqus_thread"></a><div class="post-content"><h1 id="tabular-representation-learning概念和背景"><a href="#tabular-representation-learning概念和背景" class="headerlink" title="tabular representation learning概念和背景"></a>tabular representation learning概念和背景</h1><p>Tabular 数据（表格数据）是最常见的结构化数据形式，广泛存在于金融、医疗、零售、制造等领域。其承载形式主要是关系数据、online spreadsheet、csv、excel等。然而，与图像、文本、语音等领域相比，使用深度学习模型对表格数据的大规模应用起步较晚，这是由于其研究具有以下特点：</p>
+<ul>
+<li>数据特性复杂：表格数据通常包含多种类型的特征（数值、类别、schema等），不同特征之间可能存在复杂的交互关系，传统方法难以捕捉这些特征间的深层联系。表格数据的特征分布通常是稀疏和异构的（数值型、类别型共存），同时也没有明显的空间或时间结构，深度学习模型难以直接利用其特性。</li>
+<li>数据规模的制约：表格数据通常规模通常较非结构化数据更少，而深度学习模型需要大量的数据来训练，因此，表格数据表示学习在数据规模上存在一定的制约。</li>
+<li>数据质量的挑战：表格数据通常需要人工整理，而人工整理的数据通常存在错误，这些错误可能会对模型的训练和预测产生负面影响。</li>
+<li>传统的DNN不适应表格数据：例如CNN和MLP在表格数据上通常表现不佳，这是因为它们的参数相比表格数据来说，过度参数化（over-parameterized），缺乏归纳偏差（inductive bias）。</li>
+</ul>
+<p>正是由于表格数据的这些特点，使得树模型（tree-based model，如GBDT、XGBoost、LightGBM）在表格数据上表现优秀，而深度学习模型在表格数据上整体表现不足。表示学习就是探索如何将表格数据转换为适合深度学习模型处理的形式，从而提升深度学习模型在表格数据上的表现。</p>
+<h1 id="表格数据表示学习进展"><a href="#表格数据表示学习进展" class="headerlink" title="表格数据表示学习进展"></a>表格数据表示学习进展</h1><p>下图展示了截止到2024年，表格数据表示学习领域的进展，其中，横轴表示时间，纵轴表示代表性论文或模型 [1]。<br><img src="/images/tabular-representation-learning-2024-1.png" alt="alt text"></p>
+<p>表格表示学习可以认为是一个交叉学科&#x2F;领域，主要涉及到数据库、数据分析、深度学习、图算法等领域，从发展过程整体来看，主要聚焦在这几个研究方向：</p>
+<ul>
+<li>特征工程自动化：通过表征学习减少手工特征工程工作量，提升模型效率。</li>
+<li>可解释性：在高效建模的同时，提升表征学习的可解释性，以增强信任和合规性。</li>
+<li>小样本学习与迁移学习：在有限样本和领域迁移场景中，开发高效的表征学习方法。</li>
+<li>异构数据融合：结合表格数据与图、文本、图像等异构数据，提升多模态分析能力。</li>
+<li>在线学习：针对流式数据进行实时表征学习，提高动态系统的适应性。</li>
+</ul>
+<p>如今，表格表示学习领域已经有很大程度的发展，已经慢慢成为一个独立的研究领域，例如在今年（2024年）的NeurIPS会议上，<a href="https://table-representation-learning.github.io/NeurIPS2024/">表格表示学习（Tabular Representation Learning）</a>的workshop已经是第三届了; 在2024年的VLDB会议上也有<a href="https://tabular-data-analysis.github.io/tada2024/">Tabular Data Analysis (TaDA)</a>的workshop，足以说明表格表示学习领域已经发展成为一个独立的研究领域。</p>
+<p>与此同时，我注意到表格表示学习领域在最近也出现了一些非传统意义上的内容，例如一些workshop中也call for一些相关领域的论文，如 text-to-SQL(NL2SQL), table anomaly detection, 以及一些传统的数据库领域的论文，如 query optimization, data integration, data cleaning, data quality, etc. 这些内容的出现，说明表格表示学习领域正在逐渐与其他领域进行融合。</p>
+<h1 id="表格表示学习的里程碑作品"><a href="#表格表示学习的里程碑作品" class="headerlink" title="表格表示学习的里程碑作品"></a>表格表示学习的里程碑作品</h1><p>在本领域的发展中，涌现出非常多的优秀作品，这里我挑选了一些具有代表性的作品进行介绍。这些工作之所以被认为是里程碑式的工作，主要是引入了一些后来被广泛使用的架构或者方法。关于这些思路和方法我们后面回具体总结。</p>
+<h2 id="TabNet-2019-Google"><a href="#TabNet-2019-Google" class="headerlink" title="TabNet (2019, Google)"></a>TabNet (2019, Google)</h2><p>TabNet 的核心思想是通过一种可学习的注意力机制，动态地选择输入特征的子集，并利用深度学习模型来捕捉复杂的特征交互，其主要创新点包括：</p>
+<ul>
+<li>特征选择的稀疏注意力机制<br>TabNet 通过稀疏注意力机制（Sparse Attention Mechanism），在每个决策步骤动态地选择重要特征。这种选择机制可以让模型专注于数据中最相关的特征，从而提高效率并减少过拟合风险。<br>注意力机制的稀疏性是通过引入 Gumbel-Softmax 技术实现的，使得特征选择具有离散性（近似硬选择），同时保持可微性。</li>
+<li>决策步骤（Decision Steps）<br>TabNet 的网络结构分为多个决策步骤（类似树的层次结构），每一步根据上一阶段的结果更新注意力分布，并提取出新的特征表示。<br>这种逐步建模的设计类似于 GBDT 的迭代过程，每一步在前一步基础上进一步优化。</li>
+<li>可解释性<br>TabNet 可以通过注意力分布来量化每个特征的重要性，从而实现内置的模型可解释性。这种方法不仅直观，还可以对不同决策步骤的特征贡献进行分解和可视化。</li>
+</ul>
+<h1 id=""><a href="#" class="headerlink" title=""></a></h1><h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>[1] A Survey on Deep Tabular Learning, 2024, <a href="https://arxiv.org/pdf/2410.12034">https://arxiv.org/pdf/2410.12034</a><br>[2] TabNet: Attentive Interpretable Tabular Learning, 2019, <a href="https://arxiv.org/abs/1908.07442">https://arxiv.org/abs/1908.07442</a><br>[3] </p>
+<p>[img-]</p>
+</div><div class="tags"><ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/database/" rel="tag">database</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/tabular-representation-learning/" rel="tag">tabular-representation-learning</a></li></ul></div><div class="post-nav"><a class="next" href="/2023/09/30/gpu-database/">Driving Database Innovations by GPU Accelerator</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Wotchin\'s Blog and Notebook',
+    identifier: '2024/12/30/tabular-representation-learning-2024/',
+    url: 'https://wotchin.github.io/2024/12/30/tabular-representation-learning-2024/',
+    title: '站在2024年，回看表格数据表示学习（tabular representation learning, TRL）进展和趋势',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://wotchin.github.io"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="About"><img class="nofancybox" src="/img/avatar.png"/></a><p>Hello world!</p><a class="info-icon" href="https://twitter.com/wotchin_real" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:wotchin95@gmail.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-folder-o"> Categories</i></div><ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Chinese/">Chinese</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/English/">English</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> Tags</i></div><div class="tagcloud"><a href="/tags/database/" style="font-size: 15px;">database</a> <a href="/tags/accelerator/" style="font-size: 15px;">accelerator</a> <a href="/tags/software-engineering/" style="font-size: 15px;">software-engineering</a> <a href="/tags/tabular-representation-learning/" style="font-size: 15px;">tabular-representation-learning</a> <a href="/tags/information-safety/" style="font-size: 15px;">information-safety</a> <a href="/tags/operation-system/" style="font-size: 15px;">operation-system</a> <a href="/tags/big-data/" style="font-size: 15px;">big-data</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2024/12/30/tabular-representation-learning-2024/">站在2024年，回看表格数据表示学习（tabular representation learning, TRL）进展和趋势</a></li><li class="post-list-item"><a class="post-list-link" href="/2023/09/30/gpu-database/">Driving Database Innovations by GPU Accelerator</a></li><li class="post-list-item"><a class="post-list-link" href="/2020/02/09/optimistic-pessimistic-lock-in-database/">数据库中的乐观锁与悲观锁初步</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/08/20/large-scale-data-processing/">大规模数据处理系统的最新技术与应用（2020年前的旧视角）</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/12/31/select-poll-epoll-difference/">IO 多路复用的 select, poll, epoll 之间的区别和联系总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/09/30/%E5%9F%BA%E4%BA%8E%20PHP%20%E7%9A%84%20Webshell%20%E8%87%AA%E5%8A%A8%E6%A3%80%E6%B5%8B%E5%88%8D%E8%AE%AE/">基于Php的webshell自动检测刍议</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-comment-o"> Recent Comments</i></div><script type="text/javascript" src="//wotchin.disqus.com/recent_comments_widget.js?num_items=5&amp;hide_avatars=1&amp;avatar_size=32&amp;excerpt_length=20&amp;hide_mods=1"></script></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> Links</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN blog" target="_blank">Archived CSDN blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2025 <a href="/." rel="nofollow">Wotchin's Blog and Notebook.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="Copy Successed!"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>
