@@ -5,9 +5,9 @@
 # Site
 title: Wotchin's Blog and Notebook
 subtitle: Dive into and discuss all my interests -- find me via X @real_wotchin
-description: "wotchin's selected posts"
+description: "Jack's selected posts"
 keywords: wotchin
-author: Wotchin
+author: Jack W.
 language: en
 timezone: 'Asia/Shanghai'
 
@@ -40,7 +40,7 @@ external_link:
   exclude: ''
 filename_case: 0
 render_drafts: false
-post_asset_folder: false
+post_asset_folder: true
 relative_link: false
 future: true
 highlight:

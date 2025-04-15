@@ -1,10 +1,12 @@
 ---
 title: Driving Database Innovations by GPU Accelerator
 category: English
-date: 2023-10-01
+date: 2025-04-01
 tags: 
   - database
+  - gpu
   - accelerator
+  - emergencing-hardware
 ---
 
 # GPU database
