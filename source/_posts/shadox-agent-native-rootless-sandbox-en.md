@@ -4,6 +4,8 @@ description: "Introducing shadox: a lightweight rootless process sandbox for Lin
 category: English
 date: 2026-06-22
 updated: 2026-06-22
+lang: en
+translation_url: /2026/06/22/shadox-agent-native-rootless-sandbox/
 tags:
   - rust
   - linux

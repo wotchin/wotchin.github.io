@@ -149,7 +149,6 @@ menu:
 widgets: ## Seven widgets in sidebar provided: search, info, category, tag, recent_posts, recent_comments and links.
   - search
   - info
-  - category
   - tag
   - recent_posts
   - links

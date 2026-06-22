@@ -1,2 +1,7 @@
 if page.tags
-  .tags!= list_tags(page.tags,{show_count:false, class:"article-tag"})
+  -
+    var currentLang = page.lang && String(page.lang).indexOf('zh') === 0 ? 'zh' : 'en';
+    var tags = page.tags && page.tags.toArray ? page.tags.toArray() : [];
+  .tags
+    each tag in tags
+      a.article-tag(href=url_for(currentLang === 'zh' ? 'zh/tags/' + (tag.slug || tag.name) + '/' : tag.path), title=tag.name)= tag.name

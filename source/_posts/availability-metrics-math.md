@@ -5,6 +5,8 @@ category: Chinese
 date: 2023-04-17
 updated: 2026-06-22
 mathjax2: true
+lang: zh-CN
+translation_url: /2023/04/17/availability-metrics-math-en/
 tags:
   - sre
   - observability

@@ -4,6 +4,8 @@ description: 从系统调用语义、内核数据结构、等待队列、就绪�
 category: Chinese
 date: 2018-01-01
 updated: 2026-06-21
+lang: zh-CN
+translation_url: /2018/01/01/select-poll-epoll-difference-en/
 tags:
   - operation-system
 ---

@@ -35,6 +35,9 @@ block content
           span= ' ' + __('Hits')
       if theme.wordcount == true
         include _partial/wordcount.pug
+    if page.translation_url
+      .post-language-link
+        a(href=url_for(page.translation_url))= page.lang && String(page.lang).indexOf('zh') === 0 ? 'Read in English' : '阅读中文版'
     if theme.disqus.enable == true
       a.disqus-comment-count(data-disqus-identifier=page.path, href=url_for(page.path) + '#disqus_thread')
     if theme.changyan

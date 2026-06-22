@@ -13,8 +13,46 @@ if config.feed
     default
       - var feed_type='application/atom+xml'
 
+-
+  function languageOf(item) {
+    if (!item) return 'en';
+    var declared = String(item.lang || item.language || '').toLowerCase();
+    if (declared.indexOf('zh') === 0) return 'zh';
+    if (declared.indexOf('en') === 0) return 'en';
+    var categoryName = String(item.category || '').toLowerCase();
+    if (categoryName === 'chinese') return 'zh';
+    if (categoryName === 'english') return 'en';
+    var categories = item.categories && item.categories.toArray ? item.categories.toArray() : [];
+    for (var i = 0; i < categories.length; i++) {
+      var name = String(categories[i].name || '').toLowerCase();
+      if (name === 'chinese') return 'zh';
+      if (name === 'english') return 'en';
+    }
+    return 'en';
+  }
+  var currentPath = page && page.path ? page.path : '';
+  var currentLang = page && page.lang_filter ? page.lang_filter : (currentPath.indexOf('zh/') === 0 ? 'zh' : languageOf(page));
+  function localizedMenuPath(directory) {
+    if (currentLang !== 'zh') return directory;
+    if (directory === '.') return 'zh/';
+    if (directory === 'archives/') return 'zh/archives/';
+    if (directory === 'tags/') return 'zh/tags/';
+    return directory;
+  }
+  function languageSwitchPath(targetLang) {
+    if (page && page.translation_url) {
+      return targetLang === currentLang ? (page.path || '.') : page.translation_url;
+    }
+    var isArchivePath = currentPath.indexOf('archives/') >= 0;
+    var isTagsPath = currentPath.indexOf('tags/') >= 0;
+    if (targetLang === 'zh' && isTagsPath) return 'zh/tags/';
+    if (targetLang === 'zh') return isArchivePath ? 'zh/archives/' : 'zh/';
+    if (targetLang === 'en' && isTagsPath) return 'tags/';
+    return isArchivePath ? 'archives/' : '.';
+  }
+
 doctype html
-html(lang=config.language)
+html(lang=currentLang === 'zh' ? 'zh-CN' : 'en')
   include _partial/head.pug
   body: .body_container
     #header
@@ -24,7 +62,11 @@ html(lang=config.language)
         p.description= config.subtitle
       #nav-menu
         - for (var i in theme.menu)
-          +a_with_current(theme.menu[i].directory, __(theme.menu[i].page), theme.menu[i].icon)
+          +a_with_current(localizedMenuPath(theme.menu[i].directory), __(theme.menu[i].page), theme.menu[i].icon)
+        .language-switch(aria-label="Language")
+          a(class=currentLang === 'en' ? 'active' : '', href=url_for(languageSwitchPath('en'))) EN
+          span /
+          a(class=currentLang === 'zh' ? 'active' : '', href=url_for(languageSwitchPath('zh'))) 中文
 
     #layout.pure-g
       .pure-u-1.pure-u-md-3-4: .content_container
@@ -32,11 +74,11 @@ html(lang=config.language)
       if theme.widgets_on_small_screens
         .pure-u-1.pure-u-md-1-4: #sidebar
           each item in theme.widgets
-            != partial('_widget/' + item + '.pug', null, {cache: !config.relative_link})
+            != partial('_widget/' + item + '.pug', null, {cache: false})
       else
         .pure-u-1-4.hidden_mid_and_down: #sidebar
           each item in theme.widgets
-            != partial('_widget/' + item + '.pug', null, {cache: !config.relative_link})
+            != partial('_widget/' + item + '.pug', null, {cache: false})
       .pure-u-1.pure-u-md-3-4
         != partial('_partial/footer.pug')
 

@@ -2513,6 +2513,29 @@ body {
                 background: #fbfcfd;
             }
         }
+
+        .language-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 8px;
+            color: #8a969f;
+            font-size: 12px;
+
+            a {
+                padding: 3px 8px;
+                color: #69747d;
+                border-radius: 999px;
+                border: 1px solid transparent;
+
+                &.active,
+                &:hover {
+                    color: #0b5cad;
+                    border-color: #c9d9e7;
+                    background: #f3f8fc;
+                }
+            }
+        }
     }
 }
 
@@ -2692,6 +2715,22 @@ body {
 
         a {
             color: #0b5cad;
+        }
+    }
+
+    .post-language-link {
+        margin: 12px 0 0;
+
+        a {
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            padding: 0 10px;
+            border: 1px solid #cdd6dd;
+            border-radius: 6px;
+            color: #0b5cad;
+            font-weight: 700;
+            background: #f7fafc;
         }
     }
 

@@ -2,18 +2,45 @@ extends base
 block title
   title= page.title + ' | ' + config.title
 block content
+  -
+    function languageOf(item) {
+      if (!item) return 'en';
+      var declared = String(item.lang || item.language || '').toLowerCase();
+      if (declared.indexOf('zh') === 0) return 'zh';
+      if (declared.indexOf('en') === 0) return 'en';
+      var categories = item.categories && item.categories.toArray ? item.categories.toArray() : [];
+      for (var i = 0; i < categories.length; i++) {
+        var name = String(categories[i].name || '').toLowerCase();
+        if (name === 'chinese') return 'zh';
+        if (name === 'english') return 'en';
+      }
+      return 'en';
+    }
+    var currentLang = page.lang_filter || ((page.path || '').indexOf('zh/') === 0 ? 'zh' : languageOf(page));
+    var tagMap = {};
+    site.posts.sort('-date').toArray().filter(function(post) { return languageOf(post) === currentLang; }).forEach(function(post) {
+      var tags = post.tags && post.tags.toArray ? post.tags.toArray() : [];
+      tags.forEach(function(tag) {
+        var key = tag.slug || tag.name;
+        if (!tagMap[key]) tagMap[key] = {name: tag.name, slug: key, path: tag.path, posts: []};
+        tagMap[key].posts.push(post);
+      });
+    });
+    var tags = Object.keys(tagMap).map(function(key) { return tagMap[key]; }).sort(function(a, b) {
+      return a.name.localeCompare(b.name);
+    });
   .post
     h1.post-title= page.title
     .post-content
       .tagcloud
-        for tag in site.tags.toArray()
-          a(href='/tags/#' + tag.name, title=tag.name, rel= tag.length) #{tag.name}
+        for tag in tags
+          a(href='#' + tag.name, title=tag.name, rel= tag.posts.length) #{tag.name}
 
-      for tag in site.tags.toArray()
+      for tag in tags
         .one-tag-list
           span.fa.fa-tag.tag-name(id=tag.name)
             span.tag-text #{tag.name}
-          for post in tag.posts.toArray()
+          for post in tag.posts
             .post-preview
               a(href=config.root + post.path, title=post.title) #{post.title}
 

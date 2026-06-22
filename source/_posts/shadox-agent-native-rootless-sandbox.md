@@ -4,6 +4,8 @@ description: 介绍 shadox 的设计动机、架构、Rootless 安全能力、JS
 category: Chinese
 date: 2026-06-22
 updated: 2026-06-22
+lang: zh-CN
+translation_url: /2026/06/22/shadox-agent-native-rootless-sandbox-en/
 tags:
   - rust
   - linux

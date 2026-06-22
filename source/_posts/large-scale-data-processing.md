@@ -4,6 +4,8 @@ description: 重新梳理大规模数据处理系统的演进逻辑：存储计�
 category: Chinese
 date: 2019-08-21
 updated: 2026-06-21
+lang: zh-CN
+translation_url: /2019/08/21/large-scale-data-processing-en/
 tags:
   - big-data
   - database

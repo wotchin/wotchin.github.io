@@ -4,6 +4,8 @@ description: 用更系统的方式理解乐观锁、悲观锁、MVCC、事务隔
 category: Chinese
 date: 2020-02-10
 updated: 2026-06-21
+lang: zh-CN
+translation_url: /2020/02/10/optimistic-pessimistic-lock-in-database-en/
 tags:
   - database
   - software-engineering

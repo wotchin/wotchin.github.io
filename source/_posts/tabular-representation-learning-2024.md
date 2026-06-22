@@ -2,6 +2,9 @@
 title: 表格数据表示学习(TRL)：2024年现状与展望
 category: Chinese
 date: 2024-12-30
+updated: 2026-06-22
+lang: zh-CN
+translation_url: /2024/12/30/tabular-representation-learning-2024-en/
 tags: 
   - database
   - tabular-representation-learning
