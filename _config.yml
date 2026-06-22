@@ -3,17 +3,17 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Wotchin's Blog and Notebook
-subtitle: Dive into and discuss all my interests -- find me via X @real_wotchin
-description: "Jack's selected posts"
-keywords: wotchin
+title: Jack's AI Studio
+subtitle: AI systems, databases, and agent infrastructure insights.
+description: "Technical essays on AI systems, databases, infrastructure software, and consulting-ready engineering practice."
+keywords: AI systems, databases, agentic AI, agent, infrastructure, data systems, Jack W, The Jack Studio
 author: Jack W.
 language: en
-timezone: 'Asia/Shanghai'
+timezone: 'America/New_York'
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
-url: https://wotchin.github.io
+url: https://blog.thejackstudio.com
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 pretty_urls:
@@ -98,6 +98,11 @@ ignore:
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
 theme: maupassant
+
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment

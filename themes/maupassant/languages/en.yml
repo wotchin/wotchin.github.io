@@ -15,8 +15,12 @@ history: History
 rss: RSS
 guestbook: Guestbook
 home: Home
+writing: Writing
+topics: Topics
+projects: Projects
+contact: Contact
 recent_comments: Recent Comments
-Readmore: Read More
+Readmore: Continue Reading
 belongsto: Categorized in
 contents: Contents
 shareto: Share
@@ -27,11 +31,11 @@ copyright_title_prefix: "Title: "
 copyright_date_prefix: "Date: "
 copyright_update_prefix: "Last Update: "
 copyright_author_prefix: "Author: "
-copyright_link_prefix: "Blog Link: "
+copyright_link_prefix: "Canonical URL: "
 copyright_declare_prefix: "Copyright Declaration: "
 copyright_default_text: "The author owns the copyright. Please indicate the source reproduced!"
 word_cnt: Words
 read_time: Minutes
-copy_success_text: "Copy Successed!"
-Copy_address_and_show_QRCode: "Copy address and show QRCode"
-Sticky: Top
+copy_success_text: "Copied!"
+Copy_address_and_show_QRCode: "Copy address and show QR code"
+Sticky: Pinned

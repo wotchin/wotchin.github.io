@@ -6,15 +6,31 @@ block title
 block content
   .post
     h1.post-title= page.title
-    .post-meta= page.date.format(config.date_format)
+    if page.description
+      .post-dek= page.description
+    - const postText = strip_html(page.content || '')
+    - const cjkChars = (postText.match(/[\u4e00-\u9fff]/g) || []).length
+    - const latinWords = (postText.replace(/[\u4e00-\u9fff]/g, ' ').match(/[A-Za-z0-9_]+/g) || []).length
+    - const readingMinutes = Math.max(1, Math.ceil((cjkChars + latinWords) / 260))
+    .post-meta
+      span.meta-item
+        span.meta-label Published
+        span= page.date.format(config.date_format)
+      if page.updated && page.updated.valueOf() !== page.date.valueOf()
+        span.meta-item
+          span.meta-label Updated
+          span= page.updated.format(config.date_format)
+      span.meta-item
+        span.meta-label Reading
+        span= readingMinutes + ' min'
       if page.categories.length > 0
-        span= ' | '
-        span.category
+        span.meta-item.category
+          span.meta-label Category
           for category in page.categories.toArray()
             a(href=url_for(category.path))= category.name
       if theme.busuanzi == true
         script(src='https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js', async)
-        span#busuanzi_container_page_pv= ' | '
+        span#busuanzi_container_page_pv.meta-item
           span#busuanzi_value_page_pv
           span= ' ' + __('Hits')
       if theme.wordcount == true
@@ -34,7 +50,7 @@ block content
       a.disqus-comment-count(href=url_for(page.path) + '#waline')
         span.waline-comment-count(id=url_for(page.path))
         span= ' ' + __('Comment')
-    if page.toc
+    if page.toc !== false
       .clear
         #toc.toc-article
           .toc-title= __('contents')
@@ -52,6 +68,10 @@ block content
       a.article-share-link(data-url=page.permalink, data-id=page._id, data-qrcode=qrcode(page.permalink))= __('shareto')
 
     include _partial/tag.pug
+    .post-contact-cta
+      strong Work with Jack's AI Studio
+      p For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.
+      a(href=url_for('/about/#contact')) Contact
     include _partial/post_nav.pug
 
     if page.comments

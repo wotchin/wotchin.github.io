@@ -4,7 +4,12 @@ head
   meta(content='yes', name='apple-mobile-web-app-capable')
   meta(content='black-translucent', name='apple-mobile-web-app-status-bar-style')
   meta(content='telephone=no', name='format-detection')
-  meta(name='description', content=config.description)
+  meta(name='description', content=page.description || config.description)
+  - var og_title = current_title === config.title ? config.title : current_title + ' | ' + config.title
+  meta(property='og:title', content=og_title)
+  meta(property='og:description', content=page.description || config.description)
+  meta(property='og:type', content=is_post() ? 'article' : 'website')
+  meta(property='og:url', content=page.permalink || config.url)
   block title
   link(rel='stylesheet', type='text/css', href=url_for(theme.css) + '/style.css' + '?v=' + theme.version)
   link(rel='stylesheet', type='text/css', href='https://unpkg.com/normalize.css')

@@ -7,6 +7,35 @@ block title
     title= config.title
 
 block content
+  if is_home() && (!page.current || page.current === 1)
+    .home-intro
+      .home-intro-main
+        if theme.home && theme.home.eyebrow
+          .home-eyebrow= theme.home.eyebrow
+        h1= config.title
+        if theme.home && theme.home.intro
+          p= theme.home.intro
+        .home-actions
+          if theme.home && theme.home.primary_action
+            a.home-action.primary(href=url_for(theme.home.primary_action.url))= theme.home.primary_action.label
+          if theme.home && theme.home.secondary_action
+            a.home-action.secondary(href=url_for(theme.home.secondary_action.url))= theme.home.secondary_action.label
+      if theme.home && theme.home.focus
+        .home-focus
+          .home-focus-title Focus Areas
+          .home-focus-list
+            each item in theme.home.focus
+              span= item
+
+    if theme.home && theme.home.topics
+      .home-topics
+        each topic in theme.home.topics
+          a.home-topic(href=url_for(topic.url))
+            span.home-topic-title= topic.title
+            span.home-topic-desc= topic.desc
+
+    .section-heading Latest Writing
+
   for post in page.posts.toArray()
     .post
       h1.post-title
@@ -21,6 +50,10 @@ block content
       if theme.changyan
         a.ds-thread-count(href=url_for(post.path) + '#SOHUCS')
           span.cy_cmt_count(id='sourceId::' + post.date.valueOf() style='margin: 0 3px 0 1px;') 0
+          span= ' ' + __('Comment')
+      if theme.waline.enable == true
+        a.ds-thread-count(href=url_for(post.path) + '#waline')
+          span.waline-comment-count(data-path=url_for(post.path))
           span= ' ' + __('Comment')
       if post.description
         .post-content
@@ -42,6 +75,12 @@ block content
     script#dsq-count-scr(src='//'+ theme.disqus.shortname + '.disqus.com/count.js', async)
   if theme.changyan
     script#cy_cmt_num(src='https://changyan.sohu.com/upload/plugins/plugins.list.count.js?clientId=' + theme.changyan, async)
+  if theme.waline.enable == true
+    script(type='module').
+      import { commentCount } from 'https://unpkg.com/@waline/client@v3/dist/comment.js';
+      commentCount({
+        serverURL: '#{theme.waline.serverURL}',
+      });
   if config.mathjax
     include _partial/mathjax.pug
   if config.mathjax2

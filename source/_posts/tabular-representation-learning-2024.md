@@ -1,7 +1,7 @@
 ---
-title: 表格数据表示学习（tabular representation learning）：2024年现状与展望
+title: 表格数据表示学习(TRL)：2024年现状与展望
 category: Chinese
-date: 2024-12-31
+date: 2024-12-30
 tags: 
   - database
   - tabular-representation-learning
@@ -22,7 +22,8 @@ Tabular 数据（表格数据）是最常见的结构化数据形式，广泛存
 近年来，多篇综述论文对TRL领域的最新进展进行了全面的回顾，尤其关注了2020年以来的发展 。这些综述突显了该领域技术的快速发展以及日益增长的研究兴趣。短时间内涌现出多篇综述论文表明，TRL领域已经积累了大量的研究成果，值得进行系统的组织和总结 。综述论文的发表有助于定义当前的研究状态并识别未来的发展方向。
 
 例如，下图展示了截止到2024年，表格数据表示学习领域的进展，其中，横轴表示时间，纵轴表示代表性论文或模型 [1]。
-![alt text](tabular-representation-learning-2024-1.png)
+
+{% asset_img tabular-representation-learning-2024-1.png "Timeline of representative tabular representation learning models and papers through 2024" %}
 
 表格表示学习可以认为是一个交叉学科/领域，主要涉及到数据库、数据分析、深度学习、图算法等领域，从发展过程整体来看，主要聚焦在这几个研究方向：
 - 特征工程自动化：通过表征学习减少手工特征工程工作量，提升模型效率。
