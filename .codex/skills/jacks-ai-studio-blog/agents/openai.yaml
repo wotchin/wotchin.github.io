@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jack's AI Studio Blog"
+  short_description: "Maintain the bilingual Hexo blog cleanly"
+  default_prompt: "Use $jacks-ai-studio-blog to edit, translate, or troubleshoot this Hexo blog."
