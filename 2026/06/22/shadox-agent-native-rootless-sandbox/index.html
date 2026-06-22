@@ -1,0 +1,221 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="介绍 shadox 的设计动机、架构、Rootless 安全能力、JSONL trace、effective policy、diagnostic hints，以及为什么它更像 agent 的执行飞行记录仪而不是 Docker 竞品。"><meta property="og:title" content="shadox：Agent-Native 的 Rootless 进程沙箱 | Jack's AI Studio"><meta property="og:description" content="介绍 shadox 的设计动机、架构、Rootless 安全能力、JSONL trace、effective policy、diagnostic hints，以及为什么它更像 agent 的执行飞行记录仪而不是 Docker 竞品。"><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2026/06/22/shadox-agent-native-rootless-sandbox/"><title>shadox：Agent-Native 的 Rootless 进程沙箱 | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">shadox：Agent-Native 的 Rootless 进程沙箱</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a href="/zh/"><i class="fa fa-home"> 首页</i></a><a href="/zh/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/zh/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> 关于</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/">EN</a><span>/</span><a class="active" href="/2026/06/22/shadox-agent-native-rootless-sandbox/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">shadox：Agent-Native 的 Rootless 进程沙箱</h1><div class="post-dek">介绍 shadox 的设计动机、架构、Rootless 安全能力、JSONL trace、effective policy、diagnostic hints，以及为什么它更像 agent 的执行飞行记录仪而不是 Docker 竞品。</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2026-06-22</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>13 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/Chinese/">Chinese</a></span></div><div class="post-language-link"><a href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/">Read in English</a></div><a class="disqus-comment-count" data-disqus-identifier="2026/06/22/shadox-agent-native-rootless-sandbox/" href="/2026/06/22/shadox-agent-native-rootless-sandbox/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">文章目录</div><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA-mini-Docker%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">为什么不实现一个 mini-Docker？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%89%8D%E5%AE%9E%E7%8E%B0%E4%BA%86%E4%BB%80%E4%B9%88"><span class="toc-number">2.</span> <span class="toc-text">目前实现了什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Effective-Policy%EF%BC%9A%E5%85%88%E8%A7%A3%E9%87%8A%EF%BC%8C%E5%86%8D%E6%89%A7%E8%A1%8C"><span class="toc-number">3.</span> <span class="toc-text">Effective Policy：先解释，再执行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E4%B8%AA%E6%9B%B4%E5%85%B7%E4%BD%93%E7%9A%84-Profile"><span class="toc-number">4.</span> <span class="toc-text">四个更具体的 Profile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Trace-Event%EF%BC%9A%E7%BB%99-Agent-%E5%A4%84%E7%90%86%E7%9A%84%E5%8E%9F%E7%94%9F%E4%BA%8B%E4%BB%B6%E6%B5%81"><span class="toc-number">5.</span> <span class="toc-text">Trace Event：给 Agent 处理的原生事件流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Summary%EF%BC%9A%E4%B8%8D%E4%BB%85%E7%9F%A5%E9%81%93%E5%A4%B1%E8%B4%A5%E7%BB%93%E6%9E%9C%EF%BC%8C%E8%BF%98%E5%91%8A%E8%AF%89%E4%BD%A0%E6%80%8E%E4%B9%88%E7%BB%A7%E7%BB%AD"><span class="toc-number">6.</span> <span class="toc-text">Summary：不仅知道失败结果，还告诉你怎么继续</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%89%E5%9E%8B-Landlock%E3%80%81seccomp-%E5%92%8C-Rhai"><span class="toc-number">7.</span> <span class="toc-text">为什么选型 Landlock、seccomp 和 Rhai</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8E%E7%8E%B0%E6%9C%89%E9%A1%B9%E7%9B%AE%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="toc-number">8.</span> <span class="toc-text">与现有项目的对比</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BD%93%E5%89%8D%E9%99%90%E5%88%B6"><span class="toc-number">9.</span> <span class="toc-text">当前限制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%8E%E7%BB%AD%E8%B7%AF%E7%BA%BF"><span class="toc-number">10.</span> <span class="toc-text">后续路线</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">11.</span> <span class="toc-text">总结</span></a></li></ol></div></div><div class="post-content"><p>最近在研究 Agent Runtime，在 Code Agent 的帮助下，快速实现了一个 research project：<strong>shadox</strong>。它是一个用 Rust 写的、面向 Linux 的轻量级 rootless process sandbox runtime。</p>
+<p>这个项目最初的灵感来自一个很经典的工程实验：用少量 Shell 脚本解释 Docker 背后的 namespace、cgroup、rootfs 等核心概念。在深入研究 sandbox 相关技术后，我认为 shadox 从一开始就不应该做 Docker 的简化版，也不应该成为一个新的 container runtime。它的目标更明确：</p>
+<blockquote>
+<p>在不依赖 root 权限、不引入 daemon、不复刻完整容器语义的前提下，为 agent 执行普通命令提供限制、观测、诊断和可编程规则。</p>
+</blockquote>
+<p>换句话说，shadox 更像是一个 <strong>agent execution flight recorder</strong>：它不只是把命令关进一个小房间，还要清楚记录这次执行发生了什么、为什么失败、下一步应该检查哪里。这个概念来源于最近比较火的 Agent Trace 观测领域，也结合了我最近一段时间在 trace 记录和编译为 memory 方面的经验：先打通 agent 执行的“第一公里”，再逐步形成一个尽可能完整的 infra 闭环。这里，我们最终想要实现的目标一定不是大而全的容器，更不是虚拟化基础设施，而是足够轻量、能够提供可观测窗口的、agent-native 沙箱系统，轻量到足以在端侧 Agent 上进行部署。</p>
+<h2 id="为什么不实现一个-mini-Docker？"><a href="#为什么不实现一个-mini-Docker？" class="headerlink" title="为什么不实现一个 mini-Docker？"></a>为什么不实现一个 mini-Docker？</h2><p>如果要做一个“像 Docker 一样”的东西，很容易一路走向 namespace、mount namespace、network namespace、overlayfs、image、OCI spec、cgroup delegation、rootfs 管理、registry、runtime shim 等方向。这些方向非常重要，但已经有成熟生态。</p>
+<p>shadox 刻意避开这条路。一个原因是不想在现有的技术路线上重复“造轮子”，另一个原因是不希望探索性项目最终无法应用到实际场景中，最后只能沦落为一个 research project。</p>
+<p>因此，我们关注的是另一类更轻、更常见、也更适合 agent 的场景：</p>
+<ul>
+<li>一个本地 agent 需要执行 <code>python script.py</code>、<code>npm test</code>、<code>grep</code>、<code>cargo check</code> 之类的普通命令；</li>
+<li>我们希望限制它的执行时间、文件写入范围、进程数量、打开文件数等资源；</li>
+<li>我们希望知道它输出了什么、是否超时、是否被 seccomp 拦截、是否疑似被 Landlock 拒绝；</li>
+<li>我们希望把这些信息变成结构化事件流，让上层 agent 可以实时消费，而不是事后翻日志猜原因；</li>
+<li>我们还希望用轻量脚本写一些观察规则，即实现可编程性（programmability），例如“如果 stderr 出现某类错误，就打一个 finding”。</li>
+</ul>
+<p>这种场景的核心问题不是“如何运行一个完整容器”，而是：</p>
+<blockquote>
+<p>如何让一个 agent 在受限环境里执行命令，并且让执行结果可解释、可审计、可被程序继续处理？</p>
+</blockquote>
+<p>这就是 shadox 的边界。</p>
+<h2 id="目前实现了什么"><a href="#目前实现了什么" class="headerlink" title="目前实现了什么"></a>目前实现了什么</h2><p>当前 shadox v1 的功能可以概括为四层：</p>
+<p>第一层是 <strong>process supervision</strong>。父进程负责创建 run directory、启动子进程、捕获 stdout&#x2F;stderr、监督 timeout，并在必要时 kill process group。</p>
+<p>第二层是 <strong>rootless restriction primitives</strong>。在 Linux 上，子进程 exec 前会应用：</p>
+<ul>
+<li><code>rlimit</code>：限制 CPU time、address space、open files、file size、process count；</li>
+<li><code>PR_SET_NO_NEW_PRIVS</code>：阻止后续 exec 获得新的特权；</li>
+<li>Landlock：限制 filesystem read&#x2F;write allowlist；</li>
+<li>seccomp basic profile：阻止明显危险或 introspection-oriented 的 syscall，例如 <code>ptrace</code>、<code>bpf</code>、<code>perf_event_open</code>、<code>mount</code> 等。</li>
+</ul>
+<p>第三层是 <strong>observability</strong>。shadox 会输出 JSONL trace event，采样 <code>/proc</code> 中的轻量资源信息，并在可用时读取 ambient cgroup v2 stats。它不会在 v1 创建或管理 cgroup，因为那会把项目推向更重的 runtime 方向。</p>
+<p>第四层是 <strong>agent diagnostics</strong>。运行结束后，shadox 会生成 <code>summary.json</code>，里面包含 exit status、signal、timeout、resource usage、stdout&#x2F;stderr tail、failure classification、observer findings 和 diagnostic hints。</p>
+<p>这四层组合起来，得到的不是一个完整 container，而是一个面向 agent 的执行契约。</p>
+<h2 id="Effective-Policy：先解释，再执行"><a href="#Effective-Policy：先解释，再执行" class="headerlink" title="Effective Policy：先解释，再执行"></a>Effective Policy：先解释，再执行</h2><p>对 agent 来说，最糟糕的执行体验之一是：命令失败了，但不知道是命令本身错了，还是 sandbox policy 太严格。</p>
+<p>所以 shadox 加了一个很关键的能力：<code>shadox explain</code>。</p>
+<p>它输出的是某次 run 的 <strong>effective policy</strong>。也就是说，它会把 TOML 配置、CLI override、profile 默认值合并之后，告诉你最终真正生效的策略。</p>
+<p>例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">shadox explain \</span><br><span class="line">  --profile read-only \</span><br><span class="line">  --seccomp-profile off \</span><br><span class="line">  -- /bin/echo hello</span><br></pre></td></tr></table></figure>
+
+<p>输出里会包含：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;schema_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;shadox_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;0.1.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile&quot;</span><span class="punctuation">:</span> <span class="string">&quot;read-only&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;effective_policy&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;fs&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;read&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;write&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;security&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;no_new_privs&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;landlock&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;seccomp_profile&quot;</span><span class="punctuation">:</span> <span class="string">&quot;off&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;allow_degraded&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;agent_contract&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;trace&quot;</span><span class="punctuation">:</span> <span class="string">&quot;JSONL event stream for live agent consumption&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;summary&quot;</span><span class="punctuation">:</span> <span class="string">&quot;final JSON report with failure classification and hints&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;policy&quot;</span><span class="punctuation">:</span> <span class="string">&quot;effective policy is explicit before run&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的重点不是 JSON 好看，而是上层 agent 可以在执行前知道这次命令会被怎样约束。对于 agent runtime，这比人类可读的 help text 更重要。</p>
+<h2 id="四个更具体的-Profile"><a href="#四个更具体的-Profile" class="headerlink" title="四个更具体的 Profile"></a>四个更具体的 Profile</h2><p>shadox 现在只提供四个 profile，而且有意保持“具象化”。</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>设计意图</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent-default</code></td>
+<td>默认 agent 执行模式：rootless restriction + observability，未显式配置 write allowlist 时允许写工作目录</td>
+</tr>
+<tr>
+<td><code>read-only</code></td>
+<td>默认不允许写文件，适合探索、读取、诊断类命令</td>
+</tr>
+<tr>
+<td><code>workspace-write</code></td>
+<td>明确表达“agent 只应该写 workspace”这个常见场景</td>
+</tr>
+<tr>
+<td><code>permissive-observe</code></td>
+<td>可信诊断模式：弱化 filesystem restriction，但保留观测和报告</td>
+</tr>
+</tbody></table>
+<p>这些 profile 不是 container mode，也不是安全等级标签，更像是 agent 的执行意图。</p>
+<p>举个例子，<code>read-only</code> 并不意味着系统完全不可变；它只是在 shadox 的 filesystem policy 里默认不给 write allowlist。用户仍然可以显式传入 <code>--allow-write</code> 扩展策略。这样做的好处是：profile 提供默认姿态，effective policy 负责最终事实。</p>
+<h2 id="Trace-Event：给-Agent-处理的原生事件流"><a href="#Trace-Event：给-Agent-处理的原生事件流" class="headerlink" title="Trace Event：给 Agent 处理的原生事件流"></a>Trace Event：给 Agent 处理的原生事件流</h2><p>每个 shadox run 默认会生成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.shadox/runs/&lt;timestamp&gt;-&lt;run_id&gt;/trace.jsonl</span><br><span class="line">.shadox/runs/&lt;timestamp&gt;-&lt;run_id&gt;/summary.json</span><br></pre></td></tr></table></figure>
+
+<p><code>trace.jsonl</code> 是一行一个 JSON event，适合 agent 实时消费。这个 JSON 文件的结构如下：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;schema_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;shadox_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;0.1.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent-default&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;ts&quot;</span><span class="punctuation">:</span> <span class="number">1790000000000</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;seq&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;run_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;00000000-0000-0000-0000-000000000000&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;kind&quot;</span><span class="punctuation">:</span> <span class="string">&quot;process.spawn&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;pid&quot;</span><span class="punctuation">:</span> <span class="number">1234</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;level&quot;</span><span class="punctuation">:</span> <span class="string">&quot;info&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>kind 字段表示追踪到的事件(event)，当前支持的事件类型包括：</p>
+<ul>
+<li><code>run.start</code></li>
+<li><code>sandbox.policy</code></li>
+<li><code>sandbox.degraded</code></li>
+<li><code>cgroup.detected</code></li>
+<li><code>process.spawn</code></li>
+<li><code>proc.sample</code></li>
+<li><code>stdout.chunk</code></li>
+<li><code>stderr.chunk</code></li>
+<li><code>sandbox.denied</code></li>
+<li><code>observer.finding</code></li>
+<li><code>process.exit</code></li>
+<li><code>run.summary</code></li>
+</ul>
+<p>这里需要特别关注 <code>schema_version</code>、<code>profile_version</code> 这些字段。很多工具早期只追求能跑，等到接入其他系统时才发现输出格式没有版本，导致后续兼容非常痛苦。shadox 从第一版就把 trace&#x2F;summary 当成正式契约，而不是临时日志，这为后续 schema 的演进提供了便利。</p>
+<h2 id="Summary：不仅知道失败结果，还告诉你怎么继续"><a href="#Summary：不仅知道失败结果，还告诉你怎么继续" class="headerlink" title="Summary：不仅知道失败结果，还告诉你怎么继续"></a>Summary：不仅知道失败结果，还告诉你怎么继续</h2><p><code>summary.json</code> 是一次执行结束后的结构化摘要。它不是简单地记录 exit code，而是尝试回答几个更适合 agent 的问题：</p>
+<ul>
+<li>命令是否成功退出？</li>
+<li>如果失败，是 timeout、signal、seccomp denied、Landlock-like denied、OOM-like，还是普通 non-zero exit？</li>
+<li>这个判断的 confidence 是 high、medium 还是 low？</li>
+<li>有哪些 evidence？</li>
+<li>stdout&#x2F;stderr 输出了多少字节，最后的 tail 是什么？</li>
+<li>observer script 是否产生了 finding？</li>
+<li>下一步 agent 应该检查什么？</li>
+</ul>
+<p>例如，如果命令疑似被 Landlock 拒绝，summary 里会出现类似的 hint：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;code&quot;</span><span class="punctuation">:</span> <span class="string">&quot;landlock_fs_allowlist&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;severity&quot;</span><span class="punctuation">:</span> <span class="string">&quot;warn&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;message&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Filesystem access was likely denied by the effective Landlock allowlist.&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;action&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Add the required path to fs.read or fs.write, or pass --allow-read/--allow-write for this run.&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;tags&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;landlock&quot;</span><span class="punctuation">,</span> <span class="string">&quot;filesystem&quot;</span><span class="punctuation">,</span> <span class="string">&quot;policy&quot;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这是 shadox 有差异化的地方：它不是只做 restriction，而是把 restriction 结果变成 agent 能理解的 diagnosis。有了这些 trace，agent 在多步骤规划、失败恢复和策略调整中都可以获得更可靠的反馈。</p>
+<h2 id="为什么选型-Landlock、seccomp-和-Rhai"><a href="#为什么选型-Landlock、seccomp-和-Rhai" class="headerlink" title="为什么选型 Landlock、seccomp 和 Rhai"></a>为什么选型 Landlock、seccomp 和 Rhai</h2><p>Linux 的 sandbox primitive 很多。shadox v1 选择的是足够轻、rootless-friendly、实现边界清晰的一组。</p>
+<p><a href="https://docs.kernel.org/userspace-api/landlock.html">Landlock</a> 是 Linux 的 unprivileged access-control 机制，适合让进程为自己和后续子进程收紧 filesystem 权限。它和传统“先拿到权限再降权”的模型不同，更适合普通用户态程序主动把自己关小。</p>
+<p><a href="https://docs.kernel.org/userspace-api/seccomp_filter.html">seccomp filter</a> 则用于过滤 syscall。shadox v1 采用 conservative blocklist，而不是激进 allowlist。这不是因为 blocklist 更安全，而是因为 v1 目标是让普通 CLI 程序保持可用，同时阻断一批明显危险或不适合 agent 执行场景的 syscall。更严格的 allowlist profile 可以放到后续版本。</p>
+<p>可编程观测选择 <a href="https://docs.rs/rhai/latest/rhai/">Rhai</a>，原因也很简单：它是 Rust 生态里的嵌入式脚本语言，足够轻。v1 的 Rhai 脚本只能观察 event 并返回 finding，不能修改 sandbox policy。在进行技术选型的时候，我也考虑过采用 Lua 或者 Python SDK，但很明显，后两者在与 Rust 结合、轻量级程度上都不如 Rhai 更合适。更何况我们场景中需要使用的可观测逻辑其实都很简单，不需要引入额外的学习成本；甚至作为 Rust 生态成员，Rhai 的代码样式也更容易被现代 LLM 生成和理解。通过 Rhai 实现一个简单的 observer 规则如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">fn on_event(event) &#123;</span><br><span class="line">    if event.kind == &quot;stderr.chunk&quot; &#123;</span><br><span class="line">        return #&#123;</span><br><span class="line">            message: &quot;process wrote to stderr&quot;,</span><br><span class="line">            severity: &quot;warn&quot;,</span><br><span class="line">            tags: [&quot;stderr&quot;, &quot;agent&quot;]</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意：脚本可以解释执行，但不能改变安全策略。否则“可编程观测”很容易变成“可编程绕过”。</p>
+<h2 id="与现有项目的对比"><a href="#与现有项目的对比" class="headerlink" title="与现有项目的对比"></a>与现有项目的对比</h2><p>shadox 并不是第一个 rootless sandbox，也不是想替代现有工具。</p>
+<p>例如 <a href="https://github.com/containers/bubblewrap">bubblewrap</a> 是非常成熟的 unprivileged sandbox construction tool，但它更像底层 building block，本身不承诺一个固定的安全策略。Firejail、nsjail、gVisor 等工具也分别在桌面应用隔离、CTF&#x2F;fuzzing&#x2F;service sandbox、container sandbox 等方向有更完整的能力。</p>
+<p>shadox 的差异化不在于“我也能调用 seccomp&#x2F;Landlock”。这些都是基础能力，不是项目护城河。</p>
+<p>真正的差异化应该是：</p>
+<blockquote>
+<p>把 sandbox execution 设计成 agent 可以理解和利用的数据产品。</p>
+</blockquote>
+<p>也就是说，shadox 的核心输出不是一个被隔离的进程，而是一份执行报告：</p>
+<ul>
+<li>policy 是什么；</li>
+<li>budget 是什么；</li>
+<li>执行过程发生了什么；</li>
+<li>哪些输出值得关注；</li>
+<li>失败原因是什么；</li>
+<li>置信度有多高；</li>
+<li>下一步该怎么调整。</li>
+</ul>
+<p>如果把传统 sandbox 看成“墙”，shadox 更像“带黑匣子的执行舱”。</p>
+<h2 id="当前限制"><a href="#当前限制" class="headerlink" title="当前限制"></a>当前限制</h2><p>shadox 目前还不应该被视为 hardened security boundary。如果要把它推进到完整安全边界，需要大量工程成本。具体来说，当前存在的限制为：</p>
+<ul>
+<li><code>run</code> 仅支持 Linux，而且未来也只考虑 Linux 操作系统；Windows 侧可以 build CLI，但会返回明确的 unsupported error；</li>
+<li>v1 版本没有实现 network namespace、mount namespace、rootless user namespace、rootfs 管理。这些能力对于容器，特别是需要人登录的容器来说非常必要，但是对于一个 agent-native sandbox 来说，优先级并不高；</li>
+<li>cgroup v2 只做 ambient stats 读取，不创建或管理 cgroup；</li>
+<li><code>--trace-syscalls</code> 目前是 reserved capability，会记录 degraded event，不会假装已经有 syscall timeline；</li>
+<li>Landlock denial 在子进程里通常表现为普通 <code>EACCES</code> 或 <code>EPERM</code>，因此 failure classification 会标注 confidence，而不是假装 100% 确定；</li>
+<li>basic seccomp profile 是 blocklist，不是严格安全 allowlist。</li>
+</ul>
+<h2 id="后续路线"><a href="#后续路线" class="headerlink" title="后续路线"></a>后续路线</h2><p>后续会进一步完善：</p>
+<ul>
+<li>diagnostics 扩展：让 hint 更接近“下一步可执行动作”，例如建议具体添加哪个 path 到 allowlist；</li>
+<li>Python&#x2F;TypeScript SDK：不嵌入解释器，只作为 JSONL&#x2F;summary 的外部消费者。</li>
+<li>optional syscall trace：通过 ptrace 模式实现显式开启的 syscall timeline；</li>
+<li>file access provenance：记录命令读写了哪些文件，形成 execution provenance graph；</li>
+<li>agent budget contract：把 time、memory、process、output、write paths 都显式表达成预算，并在 summary 里报告预算消耗；</li>
+<li>policy diff：比较两次 run 的 effective policy，解释为什么一次能跑、一次不能跑。</li>
+</ul>
+<p>进一步地，Shadox 的定位会是：成为一个用于 agent runtime、CI diagnostics、本地自动化执行的轻量执行观察层，并支持端侧生产级应用。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>shadox 的定位可以用一句话概括：</p>
+<blockquote>
+<p>A rootless, process-level, agent-observable sandbox runtime for Linux.</p>
+</blockquote>
+<p>它不是 Docker 竞品，也不是 hardened sandbox 的替代品。它试图解决的是另一个更具体的问题：当 agent 在本地执行命令时，如何限制风险、记录过程、解释失败，并把结果变成上层系统可以继续消费的结构化数据。</p>
+<p>如果说 Docker 的核心抽象是 container，那么 shadox 想打磨的核心抽象是 <strong>sandboxed run as an explainable event stream</strong>。</p>
+</div><div class="tags"><a class="article-tag" href="/zh/tags/observability/" title="observability">observability</a><a class="article-tag" href="/zh/tags/rust/" title="rust">rust</a><a class="article-tag" href="/zh/tags/linux/" title="linux">linux</a><a class="article-tag" href="/zh/tags/sandbox/" title="sandbox">sandbox</a><a class="article-tag" href="/zh/tags/agent/" title="agent">agent</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/">shadox: An Agent-Native Rootless Process Sandbox</a><a class="next" href="/2025/03/31/gpu-database/">Driving Database Innovation with GPU Acceleration</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2026/06/22/shadox-agent-native-rootless-sandbox/',
+    url: 'https://blog.thejackstudio.com/2026/06/22/shadox-agent-native-rootless-sandbox/',
+    title: 'shadox：Agent-Native 的 Rootless 进程沙箱',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/zh/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/zh/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/zh/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/zh/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/zh/tags/information-safety/" style="font-size: 15px;" title="information-safety">information-safety</a><a href="/zh/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/zh/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/zh/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/zh/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/zh/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/zh/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/zh/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/zh/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox/" title="shadox：Agent-Native 的 Rootless 进程沙箱">shadox：Agent-Native 的 Rootless 进程沙箱</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024/" title="表格数据表示学习(TRL)：2024年现状与展望">表格数据表示学习(TRL)：2024年现状与展望</a></li><li><a href="/2023/04/17/availability-metrics-math/" title="深入理解可用性指标及其数学原理">深入理解可用性指标及其数学原理</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database/" title="数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</a></li><li><a href="/2019/08/21/large-scale-data-processing/" title="大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference/" title="Linux IO 多路复用：select、poll、epoll 的区别与内核实现">Linux IO 多路复用：select、poll、epoll 的区别与内核实现</a></li><li><a href="/2016/10/01/%E5%9F%BA%E4%BA%8E%20PHP%20%E7%9A%84%20Webshell%20%E8%87%AA%E5%8A%A8%E6%A3%80%E6%B5%8B%E5%88%8D%E8%AE%AE/" title="基于Php的webshell自动检测刍议">基于Php的webshell自动检测刍议</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

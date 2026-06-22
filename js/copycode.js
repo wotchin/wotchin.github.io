@@ -1,4 +1,4 @@
-/*页面载入完成后，创建复制按钮*/
+/* Create copy buttons after the page loads. */
 !function (e, t, a) {
     var script = document.currentScript || (function () {
         var scripts = document.getElementsByTagName("script");
@@ -17,7 +17,7 @@
     });
     clipboard.on('success',
         function (e) {
-            //清除内容被选择状态
+            // Clear the selected content state.
             e.clearSelection();
             if (successText) {
                 toastr.options = {

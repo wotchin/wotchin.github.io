@@ -1,0 +1,243 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="A systematic explanation of availability, reliability, Success Ratio, Incident Ratio, MTTF/MTTR, Error Budget, SLA/SLO/SLI, Uptime/Downtime, and User-Uptime."><meta property="og:title" content="Understanding Availability Metrics and Their Mathematical Foundations | Jack's AI Studio"><meta property="og:description" content="A systematic explanation of availability, reliability, Success Ratio, Incident Ratio, MTTF/MTTR, Error Budget, SLA/SLO/SLI, Uptime/Downtime, and User-Uptime."><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2023/04/17/availability-metrics-math-en/"><title>Understanding Availability Metrics and Their Mathematical Foundations | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Understanding Availability Metrics and Their Mathematical Foundations</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> Home</i></a><a href="/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a class="active" href="/2023/04/17/availability-metrics-math-en/">EN</a><span>/</span><a href="/2023/04/17/availability-metrics-math/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">Understanding Availability Metrics and Their Mathematical Foundations</h1><div class="post-dek">A systematic explanation of availability, reliability, Success Ratio, Incident Ratio, MTTF/MTTR, Error Budget, SLA/SLO/SLI, Uptime/Downtime, and User-Uptime.</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2023-04-17</span></span><span class="meta-item"><span class="meta-label">Updated</span><span>2026-06-22</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>10 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/English/">English</a></span></div><div class="post-language-link"><a href="/2023/04/17/availability-metrics-math/">阅读中文版</a></div><a class="disqus-comment-count" data-disqus-identifier="2023/04/17/availability-metrics-math-en/" href="/2023/04/17/availability-metrics-math-en/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">Contents</div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Availability-and-Reliability"><span class="toc-number">1.</span> <span class="toc-text">Availability and Reliability</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Why-Availability-Is-Hard-to-Measure"><span class="toc-number">2.</span> <span class="toc-text">Why Availability Is Hard to Measure</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#1-Success-Ratio"><span class="toc-number">3.</span> <span class="toc-text">1. Success Ratio</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Definition"><span class="toc-number">3.1.</span> <span class="toc-text">Definition</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Strengths"><span class="toc-number">3.2.</span> <span class="toc-text">Strengths</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Limitations"><span class="toc-number">3.3.</span> <span class="toc-text">Limitations</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-Incident-Ratio-or-Time-Based-Uptime"><span class="toc-number">4.</span> <span class="toc-text">2. Incident Ratio or Time-Based Uptime</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Definition-1"><span class="toc-number">4.1.</span> <span class="toc-text">Definition</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Strengths-1"><span class="toc-number">4.2.</span> <span class="toc-text">Strengths</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Limitations-1"><span class="toc-number">4.3.</span> <span class="toc-text">Limitations</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-MTTF-MTTR-and-Related-Metrics"><span class="toc-number">5.</span> <span class="toc-text">3. MTTF, MTTR, and Related Metrics</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Definition-2"><span class="toc-number">5.1.</span> <span class="toc-text">Definition</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Strengths-2"><span class="toc-number">5.2.</span> <span class="toc-text">Strengths</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Limitations-2"><span class="toc-number">5.3.</span> <span class="toc-text">Limitations</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#4-Error-Budget"><span class="toc-number">6.</span> <span class="toc-text">4. Error Budget</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Definition-3"><span class="toc-number">6.1.</span> <span class="toc-text">Definition</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Strengths-3"><span class="toc-number">6.2.</span> <span class="toc-text">Strengths</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Limitations-3"><span class="toc-number">6.3.</span> <span class="toc-text">Limitations</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#5-SLA-SLO-and-SLI"><span class="toc-number">7.</span> <span class="toc-text">5. SLA, SLO, and SLI</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Definition-4"><span class="toc-number">7.1.</span> <span class="toc-text">Definition</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Strengths-4"><span class="toc-number">7.2.</span> <span class="toc-text">Strengths</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Limitations-4"><span class="toc-number">7.3.</span> <span class="toc-text">Limitations</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#6-Uptime-and-Downtime"><span class="toc-number">8.</span> <span class="toc-text">6. Uptime and Downtime</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Definition-5"><span class="toc-number">8.1.</span> <span class="toc-text">Definition</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Strengths-5"><span class="toc-number">8.2.</span> <span class="toc-text">Strengths</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Limitations-5"><span class="toc-number">8.3.</span> <span class="toc-text">Limitations</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#7-User-Uptime-and-Windowed-User-Uptime"><span class="toc-number">9.</span> <span class="toc-text">7. User-Uptime and Windowed User-Uptime</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Mathematical-View"><span class="toc-number">10.</span> <span class="toc-text">A Mathematical View</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Choosing-the-Right-Metric"><span class="toc-number">11.</span> <span class="toc-text">Choosing the Right Metric</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Conclusion"><span class="toc-number">12.</span> <span class="toc-text">Conclusion</span></a></li></ol></div></div><div class="post-content"><h1 id="Availability-and-Reliability"><a href="#Availability-and-Reliability" class="headerlink" title="Availability and Reliability"></a>Availability and Reliability</h1><p>Before discussing metrics, we need to separate two concepts that are often mixed together: availability and reliability.</p>
+<p>Availability describes whether a system is able to provide service when users need it. A system with high availability may still fail occasionally, but it can recover quickly enough that users experience little interruption.</p>
+<p>Reliability describes how long a system can run correctly before it fails. It is usually concerned with the probability that the system continues to work over a period of time.</p>
+<p>In a simplified model:</p>
+<p>$$<br>Availability &#x3D; \frac{Uptime}{Uptime + Downtime}<br>$$</p>
+<p>Reliability is often written as:</p>
+<p>$$<br>R(t) &#x3D; P(T &gt; t)<br>$$</p>
+<p>where (T) is the time to failure. If failures follow an exponential distribution with failure rate (\lambda), then:</p>
+<p>$$<br>R(t) &#x3D; e^{-\lambda t}<br>$$</p>
+<p>The difference is subtle but important. A system can be unreliable but highly available if failures happen frequently but recovery is almost immediate. A system can also be reliable but not highly available if failures are rare but recovery takes a long time.</p>
+<p>This article focuses mainly on availability.</p>
+<h1 id="Why-Availability-Is-Hard-to-Measure"><a href="#Why-Availability-Is-Hard-to-Measure" class="headerlink" title="Why Availability Is Hard to Measure"></a>Why Availability Is Hard to Measure</h1><p>There are many ways to quantify product availability:</p>
+<ul>
+<li>Count-based metrics such as Success Ratio.</li>
+<li>Goal-based metrics such as Error Budget.</li>
+<li>Failure-time metrics such as MTTF and MTTR.</li>
+<li>Rule-based targets such as SLA and SLO.</li>
+<li>State-based metrics such as Up and Down.</li>
+<li>User-time metrics such as User-Uptime and Windowed User-Uptime.</li>
+</ul>
+<p>Availability matters because it connects user experience, system design, operational quality, and observability. It is one of the core signals that tells us whether a product is actually usable in production.</p>
+<p>It is also harder to measure and improve than performance. Latency can often be measured per request. Availability is more ambiguous. A product may be usable for one user but broken for another. A single dependency may be down while the website still loads. A feature may work in one region but fail in another. Modern distributed systems rarely move cleanly between “fully up” and “fully down.”</p>
+<p>That is why availability metrics should be treated as models. Each metric makes a choice about what counts as failure, whose experience matters, and how impact is aggregated.</p>
+<h1 id="1-Success-Ratio"><a href="#1-Success-Ratio" class="headerlink" title="1. Success Ratio"></a>1. Success Ratio</h1><h2 id="Definition"><a href="#Definition" class="headerlink" title="Definition"></a>Definition</h2><p>Success Ratio measures the number of successful requests divided by the total number of requests during a period such as a day, week, or month:</p>
+<p>$$<br>Success\ Ratio &#x3D; \frac{Successful\ Request\ Count}{Total\ Request\ Count}<br>$$</p>
+<p>It is the complement of request failure rate.</p>
+<h2 id="Strengths"><a href="#Strengths" class="headerlink" title="Strengths"></a>Strengths</h2><p>The metric is easy to understand, easy to compute, and persuasive in communication. It fits naturally into HTTP services, APIs, RPC systems, and job execution platforms.</p>
+<h2 id="Limitations"><a href="#Limitations" class="headerlink" title="Limitations"></a>Limitations</h2><p>The first limitation is ambiguity. A system-wide success ratio has only one value, but different users may experience it very differently.</p>
+<p>For example, suppose the system receives 100 requests and 2 fail. The global success ratio is 98 percent. A high-frequency user may send 98 requests and see only 1 failure. A low-frequency user may send a single request and see that one request fail. For that user, the experienced failure rate is 100 percent.</p>
+<p>The second limitation is inflated results during outages. When users realize a product is broken, some of them stop retrying. Failed request volume decreases, the denominator shrinks, and the computed success ratio can look better than the real user impact.</p>
+<p>This is a classic observability trap: absence of requests does not mean absence of pain.</p>
+<h1 id="2-Incident-Ratio-or-Time-Based-Uptime"><a href="#2-Incident-Ratio-or-Time-Based-Uptime" class="headerlink" title="2. Incident Ratio or Time-Based Uptime"></a>2. Incident Ratio or Time-Based Uptime</h1><h2 id="Definition-1"><a href="#Definition-1" class="headerlink" title="Definition"></a>Definition</h2><p>A simple time-based availability metric measures how long the system is considered up during a period:</p>
+<p>$$<br>Incident\ Ratio &#x3D; \frac{Up\ Minutes}{Total\ Minutes}<br>$$</p>
+<p>Here, “up” and “down” are determined by known production incidents or monitoring rules.</p>
+<h2 id="Strengths-1"><a href="#Strengths-1" class="headerlink" title="Strengths"></a>Strengths</h2><p>This metric is intuitive. It maps directly to the way many people talk about system availability: the service was down for 20 minutes, or the service was available for 99.9 percent of the month.</p>
+<h2 id="Limitations-1"><a href="#Limitations-1" class="headerlink" title="Limitations"></a>Limitations</h2><p>The problem is the definition of “down.” Once a team has to decide what counts as down, there is room for interpretation.</p>
+<p>It also does not fit large distributed systems very well. Modern products are usually built from many services, instances, regions, caches, message queues, and data stores. The whole website may rarely be completely down. Instead, users see partial failures: product reviews cannot be submitted, the cart page loads slowly, a payment provider fails in one region, or a small percentage of API calls time out.</p>
+<p>For these systems, a binary up&#x2F;down state is too coarse.</p>
+<h1 id="3-MTTF-MTTR-and-Related-Metrics"><a href="#3-MTTF-MTTR-and-Related-Metrics" class="headerlink" title="3. MTTF, MTTR, and Related Metrics"></a>3. MTTF, MTTR, and Related Metrics</h1><h2 id="Definition-2"><a href="#Definition-2" class="headerlink" title="Definition"></a>Definition</h2><p>MTTF, Mean Time To Failure, measures the average amount of time a system runs before failure. A higher MTTF means the system can operate longer without interruption.</p>
+<p>MTTR, Mean Time To Recovery, measures the average time from failure to recovery. It includes detection, confirmation, investigation, repair, and validation. A lower MTTR means the system is easier to recover.</p>
+<p>MTBF, Mean Time Between Failures, measures the average time between adjacent failures:</p>
+<p>$$<br>MTBF &#x3D; MTTF + MTTR<br>$$</p>
+<p>In many systems, MTTR is much smaller than MTTF, so:</p>
+<p>$$<br>MTBF \approx MTTF<br>$$</p>
+<p>There are many related terms:</p>
+<ul>
+<li>MTTD: Mean Time To Detect.</li>
+<li>MTTA: Mean Time To Acknowledge.</li>
+<li>MTTI: Mean Time To Identify.</li>
+<li>MTTK: Mean Time To Know, meaning time to root cause.</li>
+<li>MTTV: Mean Time To Verify.</li>
+<li>MDT: Mean Down Time.</li>
+<li>MTRS: Mean Time to Restore Service.</li>
+<li>MTBSI: Mean Time Between Service Incidents.</li>
+</ul>
+<p>These metrics share the same basic idea: break the incident lifecycle into measurable intervals.</p>
+<h2 id="Strengths-2"><a href="#Strengths-2" class="headerlink" title="Strengths"></a>Strengths</h2><p>They are useful for describing macro-level operational health. They help answer questions such as:</p>
+<ul>
+<li>Are failures becoming less frequent?</li>
+<li>Are we recovering faster?</li>
+<li>Which stage of incident response consumes the most time?</li>
+<li>Should we invest more in prevention, detection, diagnosis, or recovery?</li>
+</ul>
+<h2 id="Limitations-2"><a href="#Limitations-2" class="headerlink" title="Limitations"></a>Limitations</h2><p>Like time-based uptime, these metrics depend on a definition of incident or failure. They also work best when the system has a meaningful binary state.</p>
+<p>Another limitation is granularity. The word “mean” is doing a lot of work. An average can hide the difference between many small incidents and one catastrophic incident. It can also hide long-tail recovery behavior.</p>
+<p>For incident operations, average values are useful, but they should usually be paired with percentiles, distributions, and concrete postmortem analysis.</p>
+<h1 id="4-Error-Budget"><a href="#4-Error-Budget" class="headerlink" title="4. Error Budget"></a>4. Error Budget</h1><h2 id="Definition-3"><a href="#Definition-3" class="headerlink" title="Definition"></a>Definition</h2><p>An Error Budget starts from a target and turns unreliability into a spendable budget.</p>
+<p>For example:</p>
+<ul>
+<li>The system may be unavailable for no more than 50 minutes per month.</li>
+<li>Checkout failures may not exceed 1,000 per day.</li>
+</ul>
+<p>Those 50 minutes or 1,000 failures are the budget. Each incident consumes part of it. Teams often visualize this with a burn-down or burn-rate chart.</p>
+<h2 id="Strengths-3"><a href="#Strengths-3" class="headerlink" title="Strengths"></a>Strengths</h2><p>Error Budget is practical. It turns availability into a governance mechanism. If the budget is healthy, the team can ship faster. If the budget burns too quickly, the team slows down releases and invests in reliability.</p>
+<p>This is one of the most useful ideas from Site Reliability Engineering because it converts reliability from an abstract quality goal into an operational control loop.</p>
+<h2 id="Limitations-3"><a href="#Limitations-3" class="headerlink" title="Limitations"></a>Limitations</h2><p>The metric is still coarse. It does not describe the detailed user impact of each incident. It also depends heavily on whether the chosen SLO is meaningful.</p>
+<p>If the target is poorly defined, the budget is precise but not useful.</p>
+<h1 id="5-SLA-SLO-and-SLI"><a href="#5-SLA-SLO-and-SLI" class="headerlink" title="5. SLA, SLO, and SLI"></a>5. SLA, SLO, and SLI</h1><h2 id="Definition-4"><a href="#Definition-4" class="headerlink" title="Definition"></a>Definition</h2><p>The usual practice has four steps.</p>
+<p>First, define a Service Level Agreement, or SLA. An SLA is a business commitment, often expressed as an availability percentage. For example, a monthly SLA of 99.99 percent means downtime must stay below about 4.3 minutes in a 30-day month. That allowed downtime becomes the Error Budget.</p>
+<p>Second, choose Service Level Indicators, or SLIs. These are the measurements used to evaluate service quality. Google’s SRE practice often describes four golden signals:</p>
+<ul>
+<li>Latency.</li>
+<li>Traffic.</li>
+<li>Errors.</li>
+<li>Saturation.</li>
+</ul>
+<p>Other systems may also need indicators such as accuracy, freshness, coverage, data correctness, queue delay, or successful job completion.</p>
+<p>Third, define Service Level Objectives, or SLOs. These are concrete targets for SLIs. Examples:</p>
+<ul>
+<li>The 99th percentile latency of checkout requests should be no higher than 500 ms.</li>
+<li>The 5xx error rate of payment requests should be below 0.01 percent.</li>
+<li>Data freshness should remain within 10 minutes for 99 percent of reporting jobs.</li>
+</ul>
+<p>Fourth, monitor whether these objectives are met. If the system violates the target, the Error Budget is consumed. If the SLA is breached, external compensation or contractual consequences may apply.</p>
+<h2 id="Strengths-4"><a href="#Strengths-4" class="headerlink" title="Strengths"></a>Strengths</h2><p>SLA, SLO, and SLI provide a shared language for business, engineering, operations, and customers.</p>
+<p>SLA is especially important because it is a commercial commitment. SLO is valuable because it guides engineering decisions before the SLA is violated. SLI is the measurement layer that makes both possible.</p>
+<p>Error Budget burn rate can also be used to control release frequency, risky changes, and reliability work.</p>
+<h2 id="Limitations-4"><a href="#Limitations-4" class="headerlink" title="Limitations"></a>Limitations</h2><p>The methodology is not conceptually hard, but implementation is easy to get wrong.</p>
+<p>Choosing the right SLIs requires product understanding. Setting SLO thresholds requires historical data, user expectations, and operational judgment. Defining the SLA period and the number of nines may involve product owners, engineering, QA, SRE, operations, and sometimes legal teams.</p>
+<p>There is also engineering cost. Like CMDB systems, there is no universal implementation that fits every company. Each organization adapts the model to its own architecture and operating culture.</p>
+<p>Finally, SLOs are not set once and forgotten. Teams need regular reviews:</p>
+<ul>
+<li>Should the SLI set change?</li>
+<li>Are thresholds still meaningful?</li>
+<li>Do new features require new objectives?</li>
+<li>Is the SLA too weak or too aggressive?</li>
+<li>Why did the Error Budget burn so fast last month?</li>
+</ul>
+<h1 id="6-Uptime-and-Downtime"><a href="#6-Uptime-and-Downtime" class="headerlink" title="6. Uptime and Downtime"></a>6. Uptime and Downtime</h1><h2 id="Definition-5"><a href="#Definition-5" class="headerlink" title="Definition"></a>Definition</h2><p>Uptime and Downtime track whether a product is in an Up or Down state and how long that state lasts. The result may be published to users through email, RSS, an admin console, a public status page, or a dedicated incident page.</p>
+<h2 id="Strengths-5"><a href="#Strengths-5" class="headerlink" title="Strengths"></a>Strengths</h2><p>This is the most direct form of availability communication. Users can quickly see whether a service is known to be unhealthy.</p>
+<h2 id="Limitations-5"><a href="#Limitations-5" class="headerlink" title="Limitations"></a>Limitations</h2><p>The same binary-state problem remains. For a simple single-service product, Up and Down may be enough. For a large distributed product, the actual state is usually more nuanced:</p>
+<ul>
+<li>Up for most users but slow in one region.</li>
+<li>Up for read operations but broken for writes.</li>
+<li>Up for old users but failing for newly registered users.</li>
+<li>Up for the website but down for background jobs.</li>
+</ul>
+<p>Status pages are useful, but they are communication tools, not complete availability models.</p>
+<h1 id="7-User-Uptime-and-Windowed-User-Uptime"><a href="#7-User-Uptime-and-Windowed-User-Uptime" class="headerlink" title="7. User-Uptime and Windowed User-Uptime"></a>7. User-Uptime and Windowed User-Uptime</h1><p>Many traditional availability metrics are based on time or request counts. The Google G Suite team explored a different direction: a good availability metric should be meaningful, proportional, and actionable.</p>
+<p>Meaningful means the metric reflects real user experience.</p>
+<p>Proportional means the number changes in proportion to user impact. A small incident affecting a few users should not look the same as a broad outage affecting everyone.</p>
+<p>Actionable means the metric should help engineers understand where to investigate.</p>
+<p>The key idea is to shift the unit of analysis from system time to user time.</p>
+<p>In a simplified form, User-Uptime asks: during the observation window, how much of each user’s time was the product usable?</p>
+<p>For a user (u), we can define:</p>
+<p>$$<br>UserAvailability(u) &#x3D; \frac{UsableTime(u)}{ObservedTime(u)}<br>$$</p>
+<p>Then aggregate across users:</p>
+<p>$$<br>UserUptime &#x3D; \frac{\sum_u UsableTime(u)}{\sum_u ObservedTime(u)}<br>$$</p>
+<p>Windowed User-Uptime goes further by evaluating user availability over rolling windows. This helps avoid a common problem: a global daily metric may look fine even if many users experienced short but painful interruptions.</p>
+<p>This model is closer to product reality. It asks not only whether servers were up, but whether users could do what they came to do.</p>
+<h1 id="A-Mathematical-View"><a href="#A-Mathematical-View" class="headerlink" title="A Mathematical View"></a>A Mathematical View</h1><p>Most availability metrics can be understood by asking four questions.</p>
+<p>First, what is the unit of observation?</p>
+<ul>
+<li>Request.</li>
+<li>Time.</li>
+<li>Incident.</li>
+<li>User.</li>
+<li>Feature.</li>
+<li>Region.</li>
+<li>Business transaction.</li>
+</ul>
+<p>Second, what is the state function?</p>
+<p>For a request:</p>
+<p>$$<br>S(r) \in {0, 1}<br>$$</p>
+<p>where 1 means success and 0 means failure.</p>
+<p>For a user at time (t):</p>
+<p>$$<br>U(u, t) \in {0, 1}<br>$$</p>
+<p>where 1 means the product is usable for that user.</p>
+<p>For a feature in a region:</p>
+<p>$$<br>F(feature, region, t) \in {0, 1}<br>$$</p>
+<p>Third, how do we aggregate?</p>
+<p>Success Ratio aggregates over requests:</p>
+<p>$$<br>\frac{\sum_r S(r)}{|R|}<br>$$</p>
+<p>Time-based uptime aggregates over time:</p>
+<p>$$<br>\frac{\int_0^T Up(t)dt}{T}<br>$$</p>
+<p>User-Uptime aggregates over user-time:</p>
+<p>$$<br>\frac{\sum_u \int_0^T U(u,t)dt}{\sum_u T_u}<br>$$</p>
+<p>Fourth, what weight do we assign?</p>
+<p>Not all failures are equal. A failed health-check request, a failed checkout request, and a failed internal dashboard query should not necessarily carry the same weight. In a more general form:</p>
+<p>$$<br>Availability &#x3D; \frac{\sum_i w_i \cdot S_i}{\sum_i w_i}<br>$$</p>
+<p>The hard part is choosing (i), (S_i), and (w_i) so that the metric matches product reality.</p>
+<h1 id="Choosing-the-Right-Metric"><a href="#Choosing-the-Right-Metric" class="headerlink" title="Choosing the Right Metric"></a>Choosing the Right Metric</h1><p>There is no single best availability metric. The right metric depends on the system.</p>
+<p>For a simple API, request Success Ratio and latency-based SLOs may be enough.</p>
+<p>For a SaaS product, user-journey SLIs and User-Uptime are often more meaningful.</p>
+<p>For infrastructure platforms, uptime, Error Budget, and MTTx metrics are important because customers care about contractual guarantees and operational transparency.</p>
+<p>For data platforms, freshness, completeness, correctness, and successful job completion may be more important than HTTP availability.</p>
+<p>For large distributed systems, the best approach is usually a layered model:</p>
+<ul>
+<li>Request-level metrics for local symptoms.</li>
+<li>User-level metrics for real experience.</li>
+<li>Incident metrics for operational response.</li>
+<li>SLO and Error Budget for governance.</li>
+<li>Business metrics for product impact.</li>
+</ul>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>Availability is not a single number. It is a modeling choice.</p>
+<p>Success Ratio is easy to compute but can hide uneven user impact. Uptime is intuitive but too binary for distributed systems. MTTF and MTTR describe operational maturity but smooth over incident details. Error Budget connects reliability to release governance. SLA, SLO, and SLI provide a shared framework, but require careful design. User-Uptime moves the model closer to actual user experience.</p>
+<p>The most important principle is simple: measure availability from the perspective of the product promise. If users came to place an order, “the homepage returned 200” is not enough. If customers depend on data freshness, “the API is up” is not enough.</p>
+<p>A good availability metric should be meaningful, proportional, and actionable. It should explain not only whether the system was technically alive, but whether it was useful.</p>
+</div><div class="tags"><a class="article-tag" href="/tags/sre/" title="sre">sre</a><a class="article-tag" href="/tags/observability/" title="observability">observability</a><a class="article-tag" href="/tags/reliability/" title="reliability">reliability</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2024/12/30/tabular-representation-learning-2024/">表格数据表示学习(TRL)：2024年现状与展望</a><a class="next" href="/2023/04/17/availability-metrics-math/">深入理解可用性指标及其数学原理</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2023/04/17/availability-metrics-math-en/',
+    url: 'https://blog.thejackstudio.com/2023/04/17/availability-metrics-math-en/',
+    title: 'Understanding Availability Metrics and Their Mathematical Foundations',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="About"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> Tags</i></div><div class="tagcloud"><a href="/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/tags/accelerator/" style="font-size: 15px;" title="accelerator">accelerator</a><a href="/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/tags/emerging-hardware/" style="font-size: 15px;" title="emerging-hardware">emerging-hardware</a><a href="/tags/gpu/" style="font-size: 15px;" title="gpu">gpu</a><a href="/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> Recent</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/" title="shadox: An Agent-Native Rootless Process Sandbox">shadox: An Agent-Native Rootless Process Sandbox</a></li><li><a href="/2025/03/31/gpu-database/" title="Driving Database Innovation with GPU Acceleration">Driving Database Innovation with GPU Acceleration</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024-en/" title="Tabular Representation Learning (TRL): 2024 Review and Outlook">Tabular Representation Learning (TRL): 2024 Review and Outlook</a></li><li><a href="/2023/04/17/availability-metrics-math-en/" title="Understanding Availability Metrics and Their Mathematical Foundations">Understanding Availability Metrics and Their Mathematical Foundations</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/" title="Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</a></li><li><a href="/2019/08/21/large-scale-data-processing-en/" title="Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference-en/" title="Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> Links</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="Copied!"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML" async></script><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

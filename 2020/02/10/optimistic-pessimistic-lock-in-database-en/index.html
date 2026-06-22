@@ -1,0 +1,167 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="A systematic explanation of optimistic locking, pessimistic locking, MVCC, transaction isolation, and concurrency-control trade-offs in high-concurrency business systems."><meta property="og:title" content="Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels | Jack's AI Studio"><meta property="og:description" content="A systematic explanation of optimistic locking, pessimistic locking, MVCC, transaction isolation, and concurrency-control trade-offs in high-concurrency business systems."><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2020/02/10/optimistic-pessimistic-lock-in-database-en/"><title>Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> Home</i></a><a href="/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a class="active" href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/">EN</a><span>/</span><a href="/2020/02/10/optimistic-pessimistic-lock-in-database/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</h1><div class="post-dek">A systematic explanation of optimistic locking, pessimistic locking, MVCC, transaction isolation, and concurrency-control trade-offs in high-concurrency business systems.</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2020-02-10</span></span><span class="meta-item"><span class="meta-label">Updated</span><span>2026-06-22</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>6 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/English/">English</a></span></div><div class="post-language-link"><a href="/2020/02/10/optimistic-pessimistic-lock-in-database/">阅读中文版</a></div><a class="disqus-comment-count" data-disqus-identifier="2020/02/10/optimistic-pessimistic-lock-in-database-en/" href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">Contents</div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#The-Problem-Behind-Locking"><span class="toc-number">1.</span> <span class="toc-text">The Problem Behind Locking</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Pessimistic-Locking"><span class="toc-number">2.</span> <span class="toc-text">Pessimistic Locking</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Optimistic-Locking"><span class="toc-number">3.</span> <span class="toc-text">Optimistic Locking</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#The-ABA-Problem"><span class="toc-number">4.</span> <span class="toc-text">The ABA Problem</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#MVCC-Is-Not-the-Same-Thing"><span class="toc-number">5.</span> <span class="toc-text">MVCC Is Not the Same Thing</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Isolation-Levels-and-Locking"><span class="toc-number">6.</span> <span class="toc-text">Isolation Levels and Locking</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Choosing-Between-Optimistic-and-Pessimistic-Locking"><span class="toc-number">7.</span> <span class="toc-text">Choosing Between Optimistic and Pessimistic Locking</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Common-Mistakes"><span class="toc-number">8.</span> <span class="toc-text">Common Mistakes</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Summary"><span class="toc-number">9.</span> <span class="toc-text">Summary</span></a></li></ol></div></div><div class="post-content"><h1 id="The-Problem-Behind-Locking"><a href="#The-Problem-Behind-Locking" class="headerlink" title="The Problem Behind Locking"></a>The Problem Behind Locking</h1><p>Optimistic locking and pessimistic locking are usually introduced as two concurrency-control strategies. That definition is correct, but too abstract. In real engineering work, the question is more concrete:</p>
+<blockquote>
+<p>When multiple transactions try to modify the same data at the same time, how do we prevent incorrect results while keeping throughput acceptable?</p>
+</blockquote>
+<p>Inventory deduction is the classic example. Suppose we have a product with limited stock:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> inventory (</span><br><span class="line">  sku_id <span class="type">BIGINT</span> <span class="keyword">PRIMARY</span> KEY,</span><br><span class="line">  stock <span class="type">INT</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  version <span class="type">INT</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>If two users buy the last item at the same time, both transactions may read <code>stock = 1</code>. Without proper concurrency control, both may believe the order can be placed, and the system oversells.</p>
+<p>The key issue is not the SQL statement itself. The issue is the conflict between concurrent reads and writes over shared state.</p>
+<h1 id="Pessimistic-Locking"><a href="#Pessimistic-Locking" class="headerlink" title="Pessimistic Locking"></a>Pessimistic Locking</h1><p>Pessimistic locking assumes conflicts are likely. Therefore, it locks the data before modifying it. Other transactions must wait until the lock is released.</p>
+<p>In a relational database, a typical pattern is:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> stock</span><br><span class="line"><span class="keyword">FROM</span> inventory</span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line"><span class="keyword">FOR</span> <span class="keyword">UPDATE</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> stock <span class="operator">-</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> stock <span class="operator">&gt;</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
+
+<p><code>SELECT ... FOR UPDATE</code> asks the database to acquire an exclusive row lock. While the transaction is open, other transactions trying to lock the same row must wait.</p>
+<p>The benefit is correctness under high contention. Once a transaction owns the lock, it can safely make decisions based on the current row state.</p>
+<p>The cost is blocking. If many transactions compete for the same row, throughput drops and latency increases. If transactions hold locks for too long, the system may also see lock wait timeouts or deadlocks.</p>
+<p>Pessimistic locking works well when:</p>
+<ul>
+<li>Conflicts are frequent.</li>
+<li>The protected operation is short.</li>
+<li>Correctness is more important than peak throughput.</li>
+<li>The lock scope can be kept small.</li>
+</ul>
+<p>It becomes dangerous when:</p>
+<ul>
+<li>Transactions include slow network calls.</li>
+<li>Locks are acquired in inconsistent order.</li>
+<li>Large ranges are locked unintentionally.</li>
+<li>Business logic holds database locks longer than necessary.</li>
+</ul>
+<h1 id="Optimistic-Locking"><a href="#Optimistic-Locking" class="headerlink" title="Optimistic Locking"></a>Optimistic Locking</h1><p>Optimistic locking assumes conflicts are relatively rare. Instead of locking before doing work, it detects conflicts at update time.</p>
+<p>The usual implementation adds a version column:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> stock, version</span><br><span class="line"><span class="keyword">FROM</span> inventory</span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span>;</span><br></pre></td></tr></table></figure>
+
+<p>The application reads <code>stock</code> and <code>version</code>, performs its business logic, then updates with a compare-and-swap style condition:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> stock <span class="operator">-</span> <span class="number">1</span>,</span><br><span class="line">    version <span class="operator">=</span> version <span class="operator">+</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> stock <span class="operator">&gt;</span> <span class="number">0</span></span><br><span class="line">  <span class="keyword">AND</span> version <span class="operator">=</span> <span class="number">42</span>;</span><br></pre></td></tr></table></figure>
+
+<p>If the returned affected-row count is 1, the update succeeded. If it is 0, another transaction changed the row first, so the application should retry or fail gracefully.</p>
+<p>The advantage is that no transaction waits for a lock during the read phase. This makes optimistic locking attractive for read-heavy workloads and low-conflict updates.</p>
+<p>The cost is retry. Under high contention, many transactions may fail the version check and retry repeatedly. This can waste CPU, increase latency, and put more pressure on the database.</p>
+<p>Optimistic locking works well when:</p>
+<ul>
+<li>Conflicts are uncommon.</li>
+<li>The business operation can be retried safely.</li>
+<li>User experience can tolerate a retry or a “please try again” response.</li>
+<li>The system needs high read concurrency.</li>
+</ul>
+<p>It becomes problematic when:</p>
+<ul>
+<li>The same row is updated by many concurrent transactions.</li>
+<li>Retrying has side effects.</li>
+<li>The version check is forgotten in some update paths.</li>
+<li>The application treats update failure as success.</li>
+</ul>
+<h1 id="The-ABA-Problem"><a href="#The-ABA-Problem" class="headerlink" title="The ABA Problem"></a>The ABA Problem</h1><p>A version column is not just a decoration. It prevents a subtle class of bugs often called the ABA problem.</p>
+<p>Suppose a value changes from A to B and then back to A. If a transaction only checks the final value, it may think nothing changed. In fact, the row was modified twice.</p>
+<p>With a monotonically increasing version, the transaction can detect the change:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> <span class="number">1</span>,</span><br><span class="line">    version <span class="operator">=</span> version <span class="operator">+</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> version <span class="operator">=</span> <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>Even if the visible stock value returns to the old value, the version no longer matches.</p>
+<p>In practice, a version field, update timestamp, or revision number is a simple but important part of optimistic concurrency control.</p>
+<h1 id="MVCC-Is-Not-the-Same-Thing"><a href="#MVCC-Is-Not-the-Same-Thing" class="headerlink" title="MVCC Is Not the Same Thing"></a>MVCC Is Not the Same Thing</h1><p>MVCC, Multi-Version Concurrency Control, is a database engine technique that allows readers and writers to proceed concurrently by keeping multiple versions of rows.</p>
+<p>With MVCC, a transaction reads a snapshot of the database. Writers create new row versions rather than overwriting the visible version in place. This greatly improves read concurrency.</p>
+<p>However, MVCC does not automatically solve every write conflict at the business level.</p>
+<p>For example, two transactions can both read that a coupon is unused. If both then try to mark it used, the database isolation level and write conditions determine whether one is rejected, one waits, or both produce an invalid business result.</p>
+<p>MVCC is a foundation. Optimistic and pessimistic locking are strategies built on top of database behavior and application requirements.</p>
+<h1 id="Isolation-Levels-and-Locking"><a href="#Isolation-Levels-and-Locking" class="headerlink" title="Isolation Levels and Locking"></a>Isolation Levels and Locking</h1><p>Transaction isolation defines what anomalies are allowed between concurrent transactions.</p>
+<p>Common isolation levels include:</p>
+<ul>
+<li>Read Uncommitted: transactions may read uncommitted data.</li>
+<li>Read Committed: each statement sees only committed data.</li>
+<li>Repeatable Read: reads within a transaction see a stable snapshot.</li>
+<li>Serializable: transactions behave as if executed one by one.</li>
+</ul>
+<p>Different databases implement these levels differently. MySQL InnoDB and PostgreSQL both use MVCC, but their locking behavior and Serializable implementations are not identical.</p>
+<p>This matters because locking strategies interact with isolation levels.</p>
+<p>At Read Committed, a transaction may see different committed values across statements. At Repeatable Read, snapshot reads are stable, but current reads and locking reads may still interact with newer versions. At Serializable, the database may reject transactions to prevent anomalies.</p>
+<p>A common mistake is assuming that a high isolation level eliminates the need for business-level concurrency checks. It often does not. For inventory deduction, the safest pattern is still to encode the invariant in the update condition:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> stock <span class="operator">-</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> stock <span class="operator">&gt;</span> <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+
+<p>This statement makes the business rule atomic: stock cannot be reduced below zero by this update.</p>
+<h1 id="Choosing-Between-Optimistic-and-Pessimistic-Locking"><a href="#Choosing-Between-Optimistic-and-Pessimistic-Locking" class="headerlink" title="Choosing Between Optimistic and Pessimistic Locking"></a>Choosing Between Optimistic and Pessimistic Locking</h1><p>The choice depends on conflict probability, retry cost, user experience, and correctness requirements.</p>
+<p>Use pessimistic locking when conflict is expected and the operation must be serialized. Examples include deducting the last few units of inventory, assigning unique scarce resources, or updating a financial balance where retry semantics are complicated.</p>
+<p>Use optimistic locking when conflict is rare and retry is cheap. Examples include editing profile data, updating configuration records, or saving documents where the user can resolve conflicts.</p>
+<p>For high-concurrency inventory systems, a hybrid design is common:</p>
+<ul>
+<li>Use an atomic conditional update for the database invariant.</li>
+<li>Use optimistic retry for moderate contention.</li>
+<li>Use queuing, sharding, or reservation records for hot SKUs.</li>
+<li>Use cache or pre-deduction only when reconciliation is well designed.</li>
+</ul>
+<p>The database lock is only one piece of the system design.</p>
+<h1 id="Common-Mistakes"><a href="#Common-Mistakes" class="headerlink" title="Common Mistakes"></a>Common Mistakes</h1><p>The first mistake is holding a pessimistic lock while calling external services. Database locks should protect short critical sections. Payment calls, remote APIs, and slow business workflows should not run inside the locked transaction.</p>
+<p>The second mistake is implementing optimistic locking but not checking the affected-row count. If the update affects zero rows, the conflict was detected. Ignoring that result defeats the whole mechanism.</p>
+<p>The third mistake is protecting only one code path. If one update uses version checks but another background job updates the row without them, the optimistic lock is no longer reliable.</p>
+<p>The fourth mistake is locking too much data. A missing index can turn a row-level operation into a range scan or table-level bottleneck, depending on the database and execution plan.</p>
+<p>The fifth mistake is believing that distributed locks are a simple replacement for database concurrency control. Distributed locks can be useful, but they introduce their own failure modes: lease expiration, clock assumptions, client pauses, and lock ownership ambiguity.</p>
+<h1 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h1><p>Optimistic locking and pessimistic locking are not competing slogans. They are two different responses to the same problem: concurrent modification of shared state.</p>
+<p>Pessimistic locking prevents conflicts by making other transactions wait. It is simple and strong, but can reduce throughput under contention.</p>
+<p>Optimistic locking allows concurrency and detects conflicts at commit or update time. It scales well when conflicts are rare, but depends on correct retry handling.</p>
+<p>MVCC improves read-write concurrency, but business correctness still requires careful update conditions, isolation-level awareness, and invariant design.</p>
+<p>In production systems, the best answer is often not “use optimistic locking” or “use pessimistic locking.” The best answer is to make the business invariant atomic, keep transactions short, measure contention, and choose the simplest concurrency-control strategy that preserves correctness.</p>
+</div><div class="tags"><a class="article-tag" href="/tags/database/" title="database">database</a><a class="article-tag" href="/tags/software-engineering/" title="software-engineering">software-engineering</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2023/04/17/availability-metrics-math/">深入理解可用性指标及其数学原理</a><a class="next" href="/2020/02/10/optimistic-pessimistic-lock-in-database/">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2020/02/10/optimistic-pessimistic-lock-in-database-en/',
+    url: 'https://blog.thejackstudio.com/2020/02/10/optimistic-pessimistic-lock-in-database-en/',
+    title: 'Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="About"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> Tags</i></div><div class="tagcloud"><a href="/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/tags/accelerator/" style="font-size: 15px;" title="accelerator">accelerator</a><a href="/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/tags/emerging-hardware/" style="font-size: 15px;" title="emerging-hardware">emerging-hardware</a><a href="/tags/gpu/" style="font-size: 15px;" title="gpu">gpu</a><a href="/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> Recent</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/" title="shadox: An Agent-Native Rootless Process Sandbox">shadox: An Agent-Native Rootless Process Sandbox</a></li><li><a href="/2025/03/31/gpu-database/" title="Driving Database Innovation with GPU Acceleration">Driving Database Innovation with GPU Acceleration</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024-en/" title="Tabular Representation Learning (TRL): 2024 Review and Outlook">Tabular Representation Learning (TRL): 2024 Review and Outlook</a></li><li><a href="/2023/04/17/availability-metrics-math-en/" title="Understanding Availability Metrics and Their Mathematical Foundations">Understanding Availability Metrics and Their Mathematical Foundations</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/" title="Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</a></li><li><a href="/2019/08/21/large-scale-data-processing-en/" title="Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference-en/" title="Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> Links</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="Copied!"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

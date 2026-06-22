@@ -1,0 +1,278 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="重新梳理大规模数据处理系统的演进逻辑：存储计算分离、批流一体、湖仓、HTAP、查询优化和 AI 时代的数据基础设施。"><meta property="og:title" content="大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP | Jack's AI Studio"><meta property="og:description" content="重新梳理大规模数据处理系统的演进逻辑：存储计算分离、批流一体、湖仓、HTAP、查询优化和 AI 时代的数据基础设施。"><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2019/08/21/large-scale-data-processing/"><title>大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a href="/zh/"><i class="fa fa-home"> 首页</i></a><a href="/zh/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/zh/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> 关于</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a href="/2019/08/21/large-scale-data-processing-en/">EN</a><span>/</span><a class="active" href="/2019/08/21/large-scale-data-processing/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</h1><div class="post-dek">重新梳理大规模数据处理系统的演进逻辑：存储计算分离、批流一体、湖仓、HTAP、查询优化和 AI 时代的数据基础设施。</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2019-08-21</span></span><span class="meta-item"><span class="meta-label">Updated</span><span>2026-06-21</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>17 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/Chinese/">Chinese</a></span></div><div class="post-language-link"><a href="/2019/08/21/large-scale-data-processing-en/">Read in English</a></div><a class="disqus-comment-count" data-disqus-identifier="2019/08/21/large-scale-data-processing/" href="/2019/08/21/large-scale-data-processing/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">文章目录</div><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E6%9D%A1%E6%9B%B4%E5%BA%95%E5%B1%82%E7%9A%84%E7%BA%BF%E7%B4%A2%EF%BC%9AACID%E3%80%81CAP%E3%80%81BASE-%E4%B8%8E-PACELC"><span class="toc-number">1.</span> <span class="toc-text">一条更底层的线索：ACID、CAP、BASE 与 PACELC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%EF%BC%9A%E4%BB%A5%E6%89%B9%E5%A4%84%E7%90%86%E4%B8%BA%E4%B8%AD%E5%BF%83"><span class="toc-number">2.</span> <span class="toc-text">第一阶段：以批处理为中心</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5%EF%BC%9A%E4%BB%A5%E5%86%85%E5%AD%98%E8%AE%A1%E7%AE%97%E5%92%8C-DAG-%E4%B8%BA%E4%B8%AD%E5%BF%83"><span class="toc-number">3.</span> <span class="toc-text">第二阶段：以内存计算和 DAG 为中心</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#NoSQL-%E4%B8%8E-NewSQL%EF%BC%9A%E5%88%86%E5%B8%83%E5%BC%8F%E7%BA%A6%E6%9D%9F%E4%B8%8B%E7%9A%84%E4%B8%A4%E6%9D%A1%E5%9B%9E%E5%BA%94"><span class="toc-number">4.</span> <span class="toc-text">NoSQL 与 NewSQL：分布式约束下的两条回应</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5%EF%BC%9A%E4%BA%91%E6%95%B0%E4%BB%93%E4%B8%8E%E5%AD%98%E5%82%A8%E8%AE%A1%E7%AE%97%E5%88%86%E7%A6%BB"><span class="toc-number">5.</span> <span class="toc-text">第三阶段：云数仓与存储计算分离</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E5%9B%9B%E9%98%B6%E6%AE%B5%EF%BC%9ALakehouse-%E7%9A%84%E5%87%BA%E7%8E%B0"><span class="toc-number">6.</span> <span class="toc-text">第四阶段：Lakehouse 的出现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%81%E5%A4%84%E7%90%86%EF%BC%9A%E4%BB%8E%E5%BB%B6%E8%BF%9F%E8%A1%A5%E4%B8%81%E5%88%B0%E4%B8%BB%E9%93%BE%E8%B7%AF"><span class="toc-number">7.</span> <span class="toc-text">流处理：从延迟补丁到主链路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#HTAP%EF%BC%9A%E4%BA%8B%E5%8A%A1%E4%B8%8E%E5%88%86%E6%9E%90%E7%9A%84%E5%86%8D%E8%9E%8D%E5%90%88"><span class="toc-number">8.</span> <span class="toc-text">HTAP：事务与分析的再融合</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E4%BB%8D%E7%84%B6%E6%98%AF%E6%A0%B8%E5%BF%83"><span class="toc-number">9.</span> <span class="toc-text">查询优化仍然是核心</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86%E6%88%90%E4%B8%BA%E7%B3%BB%E7%BB%9F%E8%83%BD%E5%8A%9B"><span class="toc-number">10.</span> <span class="toc-text">数据治理成为系统能力</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#AI-%E6%97%B6%E4%BB%A3%E7%9A%84%E6%96%B0%E5%8F%98%E9%87%8F"><span class="toc-number">11.</span> <span class="toc-text">AI 时代的新变量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%9E%E7%94%A8%E7%9A%84%E6%9E%B6%E6%9E%84%E5%88%A4%E6%96%AD%E6%A1%86%E6%9E%B6"><span class="toc-number">12.</span> <span class="toc-text">一个实用的架构判断框架</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">13.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">14.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="post-content"><p>这篇文章最早写于 2019 年。当时“大数据”仍然经常被当作一个很宽泛的词：Hadoop、Hive、Spark、NoSQL、NewSQL、云原生数据库都可以被放进同一个篮子。几年后再看，这种写法显得过于松散，也容易停留在概念罗列层面。</p>
+<p>更好的方式是把大规模数据处理系统看成一组长期存在的工程矛盾：</p>
+<ul>
+<li>数据规模变大后，如何存储？</li>
+<li>计算资源如何扩展？</li>
+<li>失败如何恢复？</li>
+<li>批处理、流处理、交互式查询、事务处理如何共存？</li>
+<li>数据如何治理，并被 AI&#x2F;ML 系统消费？</li>
+<li>系统如何在性能、成本、复杂度之间取平衡？</li>
+</ul>
+<p>本文按这些问题重新梳理大规模数据处理系统的演进。</p>
+<h2 id="一条更底层的线索：ACID、CAP、BASE-与-PACELC"><a href="#一条更底层的线索：ACID、CAP、BASE-与-PACELC" class="headerlink" title="一条更底层的线索：ACID、CAP、BASE 与 PACELC"></a>一条更底层的线索：ACID、CAP、BASE 与 PACELC</h2><p>如果只从产品名看，大规模数据处理系统很容易变成 Hadoop、Spark、Kafka、Flink、TiDB、Snowflake、Databricks 的名词列表。更有解释力的视角，是先看系统在做哪些取舍。</p>
+<p>传统数据库最核心的承诺是事务的 ACID：</p>
+<ul>
+<li>Atomicity：事务要么全部成功，要么全部失败。</li>
+<li>Consistency：事务执行前后，数据库约束保持成立。</li>
+<li>Isolation：并发事务之间不能互相污染。</li>
+<li>Durability：事务提交后，结果不会因为进程崩溃而丢失。</li>
+</ul>
+<p>这套承诺非常适合银行转账、订单扣库存、账户余额这类业务。问题在于，当系统从单机走向分布式，数据不再只存在一台机器上，ACID 里的隔离、持久化和一致性都要跨网络完成。网络是不可靠的，节点会故障，消息会延迟，时钟会漂移，于是分布式数据系统首先遇到 CAP 定理。</p>
+<img src="/2019/08/21/large-scale-data-processing/large-scale-data-processing-0.png" class="" title="CAP theorem as a visual guide to consistency, availability, and partition tolerance">
+
+<p>CAP 的三个字母分别是：</p>
+<ul>
+<li>Consistency：所有读请求都能看到同一份最新数据，更接近线性一致性语义。</li>
+<li>Availability：每个非故障节点都能在有限时间内返回响应。</li>
+<li>Partition tolerance：网络分区发生时，系统仍然能继续运行。</li>
+</ul>
+<p>一个常见误解是“系统可以自由三选二”。现实里，分布式系统必须面对网络分区，所以真正困难的是：当分区发生时，到底优先保证 C 还是 A。CP 系统倾向于在无法确认多数派或一致状态时拒绝服务；AP 系统倾向于继续服务，但允许短时间读到旧值或产生冲突，之后再通过补偿、合并或异步复制修复。</p>
+<p>这也是 BASE 思想出现的背景。BASE 不是 ACID 的简单反面，而是一种面向高可用系统的工程妥协：</p>
+<ul>
+<li>Basically Available：系统尽量保持可用，必要时降级。</li>
+<li>Soft state：系统允许中间状态存在。</li>
+<li>Eventually Consistent：最终收敛到一致状态。</li>
+</ul>
+<p>CAP 解释了网络分区时的选择，但没有解释“没有分区时”的日常代价。PACELC 补上了这一点：如果发生 Partition，系统在 Availability 和 Consistency 之间选择；Else，即没有分区时，系统仍然要在 Latency 和 Consistency 之间取舍。换句话说，即使网络正常，跨地域强一致读写也会付出延迟成本。</p>
+<p>这个框架解释了很多后续技术路线：</p>
+<ul>
+<li>NoSQL 系统优先解决水平扩展和高可用，通常牺牲一部分关系模型、事务能力或强一致性。</li>
+<li>NewSQL 系统试图同时保留 SQL、事务、强一致和水平扩展，于是引入 Paxos&#x2F;Raft、分片、分布式事务、全局时间戳等机制。</li>
+<li>云数仓和 Lakehouse 通常弱化高并发事务，把重点放在低成本存储、弹性计算和分析吞吐。</li>
+<li>HTAP 系统尝试把事务新鲜度和分析能力拉近，但要处理行存&#x2F;列存、隔离、资源隔离和复制延迟之间的矛盾。</li>
+</ul>
+<h2 id="第一阶段：以批处理为中心"><a href="#第一阶段：以批处理为中心" class="headerlink" title="第一阶段：以批处理为中心"></a>第一阶段：以批处理为中心</h2><p>早期大规模数据处理的经典范式是 Google 的 GFS + MapReduce。GFS 解决大规模分布式文件存储问题，MapReduce 则把大任务拆成 map 和 reduce 两个阶段，由运行时负责调度、容错和数据交换。</p>
+<p>MapReduce 的意义不在于 API 多优雅，而在于它把三个复杂问题封装起来：</p>
+<ul>
+<li>数据分片：大文件切成块，分布在多台机器上。</li>
+<li>计算调度：任务尽量靠近数据执行，减少网络传输。</li>
+<li>失败恢复：机器故障是常态，任务可以重试。</li>
+</ul>
+<p>Hadoop 生态把这套思想开源化，形成 HDFS、MapReduce、Hive 等系统。Hive 的价值是让用户用 SQL 表达分析逻辑，而不是手写 MapReduce 程序。</p>
+<p>但 MapReduce 的批处理模型也有明显问题：每个阶段都需要落盘，中间结果重，延迟高，不适合交互式分析和迭代式机器学习。</p>
+<h2 id="第二阶段：以内存计算和-DAG-为中心"><a href="#第二阶段：以内存计算和-DAG-为中心" class="headerlink" title="第二阶段：以内存计算和 DAG 为中心"></a>第二阶段：以内存计算和 DAG 为中心</h2><p>Spark 的兴起可以理解为对 MapReduce 的两点修正：</p>
+<p>第一，把计算表达成 DAG，而不是固定的 map&#x2F;reduce 两阶段。这样优化器可以更灵活地安排算子。</p>
+<p>第二，把中间数据尽量放在内存里，减少反复落盘带来的开销。对于迭代算法、交互式查询和复杂 ETL，性能会好很多。</p>
+<p>从系统视角看，Spark 代表了大规模数据处理从“批处理框架”转向“通用分布式计算引擎”。SQL、DataFrame、流处理、机器学习库都可以放在同一个执行框架上。</p>
+<p>不过 Spark 并没有消灭数据仓库。原因很简单：企业分析系统不仅需要计算，还需要稳定的 SQL 性能、权限、元数据、优化器、并发控制、成本治理和运维体验。这些恰恰是传统数据库和云数仓长期积累的能力。</p>
+<h2 id="NoSQL-与-NewSQL：分布式约束下的两条回应"><a href="#NoSQL-与-NewSQL：分布式约束下的两条回应" class="headerlink" title="NoSQL 与 NewSQL：分布式约束下的两条回应"></a>NoSQL 与 NewSQL：分布式约束下的两条回应</h2><p>互联网业务把数据系统推向了两个方向：一边是海量用户和高并发访问，另一边是更复杂的数据形态。用户画像、Feed、日志、文档、图关系、缓存、搜索索引，不一定都适合塞进单机关系数据库。NoSQL 的出现，本质上是为了优先解决扩展性、可用性和灵活数据模型。</p>
+<p>早期 NoSQL 生态可以粗略分为 key-value、document、wide-column、graph 等模型。下面这张旧图虽然有明显时代痕迹，但仍然有助于理解当时业界如何把数据库系统按照数据模型和 workload 进行划分。</p>
+<img src="/2019/08/21/large-scale-data-processing/large-scale-data-processing-1.jpg" class="" title="A historical database landscape map covering NoSQL, relational, analytic, and NewSQL systems">
+
+<p>NoSQL 的价值不是“不要 SQL”，而是把单机关系数据库不擅长的一部分问题拆出去。例如：</p>
+<ul>
+<li>key-value&#x2F;cache 适合极低延迟读写和缓存穿透保护。</li>
+<li>document database 适合 schema 变化较快的半结构化业务对象。</li>
+<li>wide-column store 适合大规模稀疏列和高写入吞吐。</li>
+<li>graph database 适合关系遍历和路径查询。</li>
+</ul>
+<p>但 NoSQL 也带来了代价：跨记录事务变弱，复杂查询能力变弱，数据一致性和二级索引维护更依赖应用层。很多公司最后发现，业务最初为了扩展性拆掉 SQL 和事务，后面又在应用层手写了一堆半成品数据库能力。</p>
+<p>NewSQL 可以理解为对这个问题的反向修正：能不能在分布式架构下继续保留 SQL、ACID 事务、强一致复制和水平扩展？Spanner、CockroachDB、TiDB、OceanBase 这类系统大多沿着这条路线前进。它们通常会组合几类技术：</p>
+<ul>
+<li>shared-nothing 分片，把数据按 key range 或 hash 分布到多个节点。</li>
+<li>Raft&#x2F;Paxos 多副本复制，让每个分片内部具备强一致和故障切换能力。</li>
+<li>分布式事务协议，处理跨分片写入的一致性。</li>
+<li>MVCC 和时间戳，支撑快照读、并发控制和历史版本。</li>
+<li>SQL 优化器，把逻辑计划拆成分布式执行计划。</li>
+</ul>
+<p>所以 NewSQL 不是“比 NoSQL 更新”的营销词，而是把关系数据库能力重新带回分布式系统的一次工程整合。它解决的问题更接近 OLTP 和实时业务，而不是替代所有离线分析平台。</p>
+<h2 id="第三阶段：云数仓与存储计算分离"><a href="#第三阶段：云数仓与存储计算分离" class="headerlink" title="第三阶段：云数仓与存储计算分离"></a>第三阶段：云数仓与存储计算分离</h2><p>云数仓的核心变化是存储和计算解耦。数据放在廉价、弹性、可靠的云对象存储或分布式存储上，计算集群按需扩缩容。</p>
+<p>这种架构解决了传统 MPP 数据仓库的几个痛点：</p>
+<ul>
+<li>存储和计算不再绑定扩容。</li>
+<li>多个计算集群可以共享同一份数据。</li>
+<li>冷热数据可以用不同成本管理。</li>
+<li>弹性资源让峰值查询更容易处理。</li>
+</ul>
+<p>但存储计算分离也不是免费午餐。远端存储访问延迟更高，缓存、数据布局、元数据管理、文件大小、统计信息和查询优化变得更重要。一个云数仓是否好用，往往取决于它能不能把“远端数据”伪装得像“本地数据”一样高效。</p>
+<h2 id="第四阶段：Lakehouse-的出现"><a href="#第四阶段：Lakehouse-的出现" class="headerlink" title="第四阶段：Lakehouse 的出现"></a>第四阶段：Lakehouse 的出现</h2><p>传统数据湖的问题是：便宜、开放、能存一切，但治理弱、事务弱、数据质量差。传统数据仓库的问题是：性能和治理强，但成本高、格式封闭、对机器学习和非结构化数据支持不自然。</p>
+<p>Lakehouse 试图把二者合并：底层使用开放文件格式和对象存储，上层提供类似仓库的事务、schema、元数据、权限和性能优化。CIDR 2021 的 Lakehouse 论文把这个趋势总结为新的数据平台架构。</p>
+<p>从工程角度看，Lakehouse 的关键不是名字，而是这几项能力：</p>
+<ul>
+<li>开放数据格式，例如 Parquet&#x2F;ORC。</li>
+<li>表格式元数据和事务日志。</li>
+<li>schema evolution 和 time travel。</li>
+<li>批处理、流处理、BI、ML 访问同一份数据。</li>
+<li>数据治理和权限控制下沉到统一 catalog。</li>
+</ul>
+<p>这类架构的本质是：把“文件集合”重新变成“可管理的表”。</p>
+<h2 id="流处理：从延迟补丁到主链路"><a href="#流处理：从延迟补丁到主链路" class="headerlink" title="流处理：从延迟补丁到主链路"></a>流处理：从延迟补丁到主链路</h2><p>早期很多公司把流处理当作离线数仓的补丁：离线 T+1 太慢，所以用 Kafka + Storm&#x2F;Flink 做实时指标。</p>
+<p>现在更合理的理解是：流处理是一种持续数据计算模型。它处理的不是“更快的批任务”，而是不断到来的事件。这里的核心问题包括：</p>
+<ul>
+<li>事件时间和处理时间的区别。</li>
+<li>out-of-order 数据如何处理。</li>
+<li>watermark 如何推进。</li>
+<li>exactly-once 语义到底覆盖到哪里。</li>
+<li>状态如何 checkpoint 和恢复。</li>
+</ul>
+<p>Flink 这类系统的价值不只是低延迟，而是把状态管理、时间语义和容错放进统一运行时。实时风控、实时推荐、实时画像、CDC 入湖、流式 ETL 都依赖这些能力。</p>
+<h2 id="HTAP：事务与分析的再融合"><a href="#HTAP：事务与分析的再融合" class="headerlink" title="HTAP：事务与分析的再融合"></a>HTAP：事务与分析的再融合</h2><p>OLTP 和 OLAP 的分离来自现实约束：事务系统追求低延迟和高并发写入，分析系统追求大扫描和复杂聚合。二者数据结构、执行引擎和资源模型都不同。</p>
+<p>但分离会带来数据新鲜度和系统复杂度问题。业务库的数据要同步到数仓，链路里有 CDC、消息队列、ETL、质量校验和延迟。一旦链路复杂，排障和治理成本就会上升。</p>
+<p>HTAP 的目标是让同一份业务数据更快进入分析路径，甚至在同一系统里同时支持事务和分析。典型做法包括：</p>
+<ul>
+<li>行存服务 OLTP，列存副本服务 OLAP。</li>
+<li>Raft&#x2F;Paxos 复制保证事务一致性。</li>
+<li>后台异步构建分析副本。</li>
+<li>优化器根据 workload 选择不同执行路径。</li>
+</ul>
+<p>从历史上看，MPP 数据库也是这条融合路线的重要前身。MPP 通常采用 shared-nothing 架构，把 SQL 计划拆成多个子计划，由 coordinator 分发给 data node 并行执行。它更偏 OLAP，但已经体现出“SQL 优化器 + 分布式执行 + 数据分片”的组合思想。</p>
+<img src="/2019/08/21/large-scale-data-processing/large-scale-data-processing-2.jpg" class="" title="A simplified MPP database architecture with coordinators, transaction manager, and data nodes">
+
+<p>MPP 的优势是并行扫描、并行 join 和高吞吐分析；劣势是弹性、事务能力、跨节点数据重分布和运维复杂度。云数仓继承并产品化了 MPP 的很多思想，而 NewSQL&#x2F;HTAP 则把这套分布式执行能力进一步带回事务系统。</p>
+<p>HTAP 很有吸引力，但不要误解成“一个系统替代所有系统”。在极大规模历史分析、复杂数据治理和多源融合场景下，湖仓&#x2F;数仓仍然有价值。HTAP 更适合高新鲜度分析、运营看板、实时决策和中等复杂度的混合负载。</p>
+<h2 id="查询优化仍然是核心"><a href="#查询优化仍然是核心" class="headerlink" title="查询优化仍然是核心"></a>查询优化仍然是核心</h2><p>无论系统包装成 Hadoop、Spark、云数仓、Lakehouse 还是 HTAP，最终都绕不开查询优化。</p>
+<p>大规模数据处理里最昂贵的通常不是单个算子，而是错误的数据移动：</p>
+<ul>
+<li>Join 顺序错误会造成中间结果爆炸。</li>
+<li>小文件过多会拖垮元数据和调度。</li>
+<li>数据倾斜会让少数 task 成为瓶颈。</li>
+<li>不准确的统计信息会误导优化器。</li>
+<li>过度 shuffle 会把网络变成瓶颈。</li>
+</ul>
+<p>因此现代系统会在多个层次优化：</p>
+<ul>
+<li>逻辑优化：谓词下推、列裁剪、投影合并。</li>
+<li>物理优化：join 算法选择、broadcast、sort-merge、hash join。</li>
+<li>运行时优化：adaptive query execution、动态过滤、运行时统计。</li>
+<li>存储优化：分区、排序、聚簇、索引、数据跳过。</li>
+<li>成本治理：资源队列、弹性扩缩容、缓存策略。</li>
+</ul>
+<p>这也是数据库技术和大数据技术逐渐融合的原因：大数据系统越来越需要数据库优化器，而数据库系统越来越需要分布式执行能力。</p>
+<h2 id="数据治理成为系统能力"><a href="#数据治理成为系统能力" class="headerlink" title="数据治理成为系统能力"></a>数据治理成为系统能力</h2><p>大规模数据处理的后半场不再只是“算得动”。企业真正痛苦的问题往往是：</p>
+<ul>
+<li>这张表是谁生产的？</li>
+<li>字段含义是什么？</li>
+<li>数据是否可信？</li>
+<li>口径变更影响哪些报表和模型？</li>
+<li>谁有权限访问敏感字段？</li>
+<li>模型训练用的数据是否可追溯？</li>
+</ul>
+<p>所以 catalog、lineage、quality、privacy、access control、data contract 变得越来越重要。没有治理能力的数据平台，只是一个更大的临时文件夹。</p>
+<p>AI 时代会进一步放大这个问题。RAG、特征工程、模型评估、训练数据构建都依赖数据质量和可追溯性。未来的数据平台不会只是 BI 的后端，也会成为 AI 应用的基础设施。</p>
+<h2 id="AI-时代的新变量"><a href="#AI-时代的新变量" class="headerlink" title="AI 时代的新变量"></a>AI 时代的新变量</h2><p>AI 给大规模数据处理带来三个新需求。</p>
+<p>第一，非结构化数据进入主链路。文档、图片、音频、日志、代码、网页都需要被解析、清洗、切分、向量化和索引。</p>
+<p>第二，向量检索和结构化查询开始融合。很多应用既要 SQL 过滤，也要 embedding search，还要权限控制和 freshness。</p>
+<p>第三，数据处理和模型推理之间的边界变模糊。特征生成、prompt 构造、检索、rerank、模型调用、结果评估，都可能出现在同一条数据链路里。</p>
+<p>这意味着未来的数据平台会更像“数据 + 计算 + AI runtime”的组合，而不是单纯的离线数仓。</p>
+<h2 id="一个实用的架构判断框架"><a href="#一个实用的架构判断框架" class="headerlink" title="一个实用的架构判断框架"></a>一个实用的架构判断框架</h2><p>如果从业务问题出发，而不是从产品名出发，可以按下面的方式选择技术：</p>
+<table>
+<thead>
+<tr>
+<th>需求</th>
+<th>更适合的系统</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T+1 离线报表</td>
+<td>Lakehouse &#x2F; 数仓 &#x2F; Spark</td>
+</tr>
+<tr>
+<td>交互式 BI</td>
+<td>云数仓 &#x2F; MPP &#x2F; OLAP 引擎</td>
+</tr>
+<tr>
+<td>实时指标</td>
+<td>Kafka + Flink &#x2F; 流式 SQL</td>
+</tr>
+<tr>
+<td>事务系统</td>
+<td>MySQL&#x2F;PostgreSQL&#x2F;NewSQL</td>
+</tr>
+<tr>
+<td>高新鲜度分析</td>
+<td>HTAP &#x2F; CDC + OLAP</td>
+</tr>
+<tr>
+<td>海量历史数据低成本存储</td>
+<td>Data Lake &#x2F; Lakehouse</td>
+</tr>
+<tr>
+<td>ML 特征与训练数据</td>
+<td>Lakehouse + Feature Store</td>
+</tr>
+<tr>
+<td>RAG 数据管道</td>
+<td>文档处理 + 向量库 + 元数据治理</td>
+</tr>
+</tbody></table>
+<p>架构上最危险的不是选错一个组件，而是没有意识到组件之间的数据边界、延迟边界和治理边界。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>大规模数据处理系统的发展不是简单的“新技术淘汰旧技术”。更准确的演进逻辑是：</p>
+<ul>
+<li>GFS&#x2F;MapReduce 解决了廉价机器上的批处理规模化。</li>
+<li>Spark 把批处理扩展成通用分布式计算。</li>
+<li>云数仓把存储计算分离和弹性资源产品化。</li>
+<li>Lakehouse 试图统一开放数据湖和数据仓库治理。</li>
+<li>流处理把持续事件计算变成主链路。</li>
+<li>HTAP 试图缩短事务数据到分析数据的路径。</li>
+<li>AI 时代要求平台同时处理结构化、非结构化和向量化数据。</li>
+</ul>
+<p>今天再谈“大数据”，不应该停留在 Hadoop、Spark、NoSQL 的名词列表，而应该回到系统问题本身：数据在哪里，计算在哪里，状态如何维护，失败如何恢复，语义如何保证，成本如何控制，以及这些能力如何服务业务决策和 AI 应用。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>[1] Jeffrey Dean and Sanjay Ghemawat, <a href="https://research.google.com/archive/mapreduce-osdi04.pdf">MapReduce: Simplified Data Processing on Large Clusters</a>, OSDI 2004.</p>
+<p>[2] Sanjay Ghemawat, Howard Gobioff, and Shun-Tak Leung, <a href="https://research.google.com/archive/gfs-sosp2003.pdf">The Google File System</a>, SOSP 2003.</p>
+<p>[3] James C. Corbett et al., <a href="https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf">Spanner: Google’s Globally-Distributed Database</a>, OSDI 2012.</p>
+<p>[4] Michael Armbrust et al., <a href="https://www.cidrdb.org/cidr2021/papers/cidr2021_paper17.pdf">Lakehouse: A New Generation of Open Platforms that Unify Data Warehousing and Advanced Analytics</a>, CIDR 2021.</p>
+</div><div class="tags"><a class="article-tag" href="/zh/tags/database/" title="database">database</a><a class="article-tag" href="/zh/tags/big-data/" title="big-data">big-data</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2019/08/21/large-scale-data-processing-en/">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</a><a class="next" href="/2018/01/01/select-poll-epoll-difference-en/">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2019/08/21/large-scale-data-processing/',
+    url: 'https://blog.thejackstudio.com/2019/08/21/large-scale-data-processing/',
+    title: '大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/zh/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/zh/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/zh/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/zh/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/zh/tags/information-safety/" style="font-size: 15px;" title="information-safety">information-safety</a><a href="/zh/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/zh/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/zh/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/zh/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/zh/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/zh/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/zh/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/zh/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox/" title="shadox：Agent-Native 的 Rootless 进程沙箱">shadox：Agent-Native 的 Rootless 进程沙箱</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024/" title="表格数据表示学习(TRL)：2024年现状与展望">表格数据表示学习(TRL)：2024年现状与展望</a></li><li><a href="/2023/04/17/availability-metrics-math/" title="深入理解可用性指标及其数学原理">深入理解可用性指标及其数学原理</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database/" title="数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</a></li><li><a href="/2019/08/21/large-scale-data-processing/" title="大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference/" title="Linux IO 多路复用：select、poll、epoll 的区别与内核实现">Linux IO 多路复用：select、poll、epoll 的区别与内核实现</a></li><li><a href="/2016/10/01/%E5%9F%BA%E4%BA%8E%20PHP%20%E7%9A%84%20Webshell%20%E8%87%AA%E5%8A%A8%E6%A3%80%E6%B5%8B%E5%88%8D%E8%AE%AE/" title="基于Php的webshell自动检测刍议">基于Php的webshell自动检测刍议</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

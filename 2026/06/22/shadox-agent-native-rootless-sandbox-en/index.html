@@ -1,0 +1,229 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="Introducing shadox: a lightweight rootless process sandbox for Linux that turns agent command execution into an explainable event stream with JSONL traces, effective policies, and diagnostic hints."><meta property="og:title" content="shadox: An Agent-Native Rootless Process Sandbox | Jack's AI Studio"><meta property="og:description" content="Introducing shadox: a lightweight rootless process sandbox for Linux that turns agent command execution into an explainable event stream with JSONL traces, effective policies, and diagnostic hints."><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2026/06/22/shadox-agent-native-rootless-sandbox-en/"><title>shadox: An Agent-Native Rootless Process Sandbox | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">shadox: An Agent-Native Rootless Process Sandbox</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> Home</i></a><a href="/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a class="active" href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/">EN</a><span>/</span><a href="/2026/06/22/shadox-agent-native-rootless-sandbox/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">shadox: An Agent-Native Rootless Process Sandbox</h1><div class="post-dek">Introducing shadox: a lightweight rootless process sandbox for Linux that turns agent command execution into an explainable event stream with JSONL traces, effective policies, and diagnostic hints.</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2026-06-22</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>10 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/English/">English</a></span></div><div class="post-language-link"><a href="/2026/06/22/shadox-agent-native-rootless-sandbox/">阅读中文版</a></div><a class="disqus-comment-count" data-disqus-identifier="2026/06/22/shadox-agent-native-rootless-sandbox-en/" href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">Contents</div><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Why-Not-Build-a-mini-Docker"><span class="toc-number">1.</span> <span class="toc-text">Why Not Build a mini-Docker?</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#What-shadox-Implements-Today"><span class="toc-number">2.</span> <span class="toc-text">What shadox Implements Today</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Effective-Policy-Explain-Before-Run"><span class="toc-number">3.</span> <span class="toc-text">Effective Policy: Explain Before Run</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Four-Concrete-Profiles"><span class="toc-number">4.</span> <span class="toc-text">Four Concrete Profiles</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Trace-Events-A-Native-Event-Stream-for-Agents"><span class="toc-number">5.</span> <span class="toc-text">Trace Events: A Native Event Stream for Agents</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Summary-Not-Just-What-Failed-But-What-to-Do-Next"><span class="toc-number">6.</span> <span class="toc-text">Summary: Not Just What Failed, But What to Do Next</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Why-Landlock-seccomp-and-Rhai"><span class="toc-number">7.</span> <span class="toc-text">Why Landlock, seccomp, and Rhai</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Comparison-with-Existing-Projects"><span class="toc-number">8.</span> <span class="toc-text">Comparison with Existing Projects</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Current-Limitations"><span class="toc-number">9.</span> <span class="toc-text">Current Limitations</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Roadmap"><span class="toc-number">10.</span> <span class="toc-text">Roadmap</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Summary"><span class="toc-number">11.</span> <span class="toc-text">Summary</span></a></li></ol></div></div><div class="post-content"><p>I have recently been studying Agent Runtime systems. With the help of a Code Agent, I quickly built a small research project called <strong>shadox</strong>: a lightweight, rootless, process-level sandbox runtime for Linux, written in Rust.</p>
+<p>The original inspiration came from a classic engineering exercise: using a small amount of Shell code to explain the core ideas behind Docker, such as namespace, cgroup, and rootfs. But after looking more closely at sandboxing technologies, I became convinced that shadox should not be a simplified Docker, nor should it try to become another container runtime.</p>
+<p>Its goal is narrower and more explicit:</p>
+<blockquote>
+<p>Without requiring root privileges, introducing a daemon, or recreating full container semantics, shadox provides restriction, observation, diagnostics, and programmable rules for ordinary commands executed by agents.</p>
+</blockquote>
+<p>In other words, shadox is closer to an <strong>agent execution flight recorder</strong>. It does not merely put a command into a small room. It also records what happened during execution, why it failed, and where the agent should look next.</p>
+<p>This idea is influenced by the growing interest in Agent Trace observability. It also connects to my recent experience with recording traces and compiling them into memory. The first step is to close the “first mile” of agent execution, then gradually form a more complete infrastructure loop. The final goal is not a large, general-purpose container system, let alone a virtualization layer. The goal is an agent-native sandbox that is lightweight enough to run on endpoint-side agents while still exposing a useful observability window.</p>
+<h2 id="Why-Not-Build-a-mini-Docker"><a href="#Why-Not-Build-a-mini-Docker" class="headerlink" title="Why Not Build a mini-Docker?"></a>Why Not Build a mini-Docker?</h2><p>If we try to build something “like Docker”, it is very easy to move toward namespace, mount namespace, network namespace, overlayfs, image, OCI spec, cgroup delegation, rootfs management, registry, runtime shim, and so on. These directions are important, but they already have mature ecosystems.</p>
+<p>shadox deliberately avoids that path. One reason is that I do not want to rebuild existing technology for its own sake. Another reason is that exploratory projects often fail to reach practical scenarios when their scope becomes too broad; they end up as research demos rather than useful tools.</p>
+<p>The scenario shadox targets is lighter, more common, and more suitable for agents:</p>
+<ul>
+<li>A local agent needs to run ordinary commands such as <code>python script.py</code>, <code>npm test</code>, <code>grep</code>, or <code>cargo check</code>.</li>
+<li>We want to limit execution time, writable paths, process count, open files, and other resources.</li>
+<li>We want to know what the command printed, whether it timed out, whether it was blocked by seccomp, and whether it was likely denied by Landlock.</li>
+<li>We want to turn these signals into a structured event stream that an upper-layer agent can consume in real time, instead of making it inspect logs after the fact.</li>
+<li>We also want lightweight programmable observation rules, such as “if stderr contains a certain class of error, emit a finding”.</li>
+</ul>
+<p>The core question is not:</p>
+<blockquote>
+<p>How do we run a complete container?</p>
+</blockquote>
+<p>The core question is:</p>
+<blockquote>
+<p>How do we let an agent execute commands in a restricted environment while making the result explainable, auditable, and machine-consumable?</p>
+</blockquote>
+<p>That is the boundary of shadox.</p>
+<h2 id="What-shadox-Implements-Today"><a href="#What-shadox-Implements-Today" class="headerlink" title="What shadox Implements Today"></a>What shadox Implements Today</h2><p>The current shadox v1 can be understood in four layers.</p>
+<p>The first layer is <strong>process supervision</strong>. The parent process creates the run directory, starts the child process, captures stdout and stderr, supervises timeout, and kills the process group when necessary.</p>
+<p>The second layer is <strong>rootless restriction primitives</strong>. On Linux, before the child process executes the target command, shadox applies:</p>
+<ul>
+<li><code>rlimit</code>: limits CPU time, address space, open files, file size, and process count;</li>
+<li><code>PR_SET_NO_NEW_PRIVS</code>: prevents later exec operations from gaining new privileges;</li>
+<li>Landlock: restricts filesystem read&#x2F;write allowlists;</li>
+<li>a basic seccomp profile: blocks clearly dangerous or introspection-oriented syscalls such as <code>ptrace</code>, <code>bpf</code>, <code>perf_event_open</code>, and <code>mount</code>.</li>
+</ul>
+<p>The third layer is <strong>observability</strong>. shadox emits JSONL trace events, samples lightweight resource information from <code>/proc</code>, and reads ambient cgroup v2 stats when available. It does not create or manage cgroups in v1, because that would push the project toward a heavier runtime.</p>
+<p>The fourth layer is <strong>agent diagnostics</strong>. At the end of a run, shadox writes <code>summary.json</code>, which contains exit status, signal, timeout, resource usage, stdout&#x2F;stderr tails, failure classification, observer findings, and diagnostic hints.</p>
+<p>Together, these four layers produce not a full container, but an execution contract for agents.</p>
+<h2 id="Effective-Policy-Explain-Before-Run"><a href="#Effective-Policy-Explain-Before-Run" class="headerlink" title="Effective Policy: Explain Before Run"></a>Effective Policy: Explain Before Run</h2><p>One of the worst execution experiences for an agent is this: a command fails, but the agent cannot tell whether the command itself was wrong or the sandbox policy was too strict.</p>
+<p>This is why shadox includes an important capability: <code>shadox explain</code>.</p>
+<p>It outputs the <strong>effective policy</strong> of a run. In other words, it merges the TOML config, CLI overrides, and profile defaults, then tells you the policy that will actually take effect.</p>
+<p>For example:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">shadox explain \</span><br><span class="line">  --profile read-only \</span><br><span class="line">  --seccomp-profile off \</span><br><span class="line">  -- /bin/echo hello</span><br></pre></td></tr></table></figure>
+
+<p>The output includes fields like:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;schema_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;shadox_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;0.1.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile&quot;</span><span class="punctuation">:</span> <span class="string">&quot;read-only&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;effective_policy&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;fs&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;read&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;write&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;security&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;no_new_privs&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;landlock&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;seccomp_profile&quot;</span><span class="punctuation">:</span> <span class="string">&quot;off&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;allow_degraded&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">false</span></span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;agent_contract&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;trace&quot;</span><span class="punctuation">:</span> <span class="string">&quot;JSONL event stream for live agent consumption&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;summary&quot;</span><span class="punctuation">:</span> <span class="string">&quot;final JSON report with failure classification and hints&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;policy&quot;</span><span class="punctuation">:</span> <span class="string">&quot;effective policy is explicit before run&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>The point is not that the JSON is pretty. The point is that an upper-layer agent can know how this command will be constrained before it runs. For agent runtimes, this is more important than a human-readable help text.</p>
+<h2 id="Four-Concrete-Profiles"><a href="#Four-Concrete-Profiles" class="headerlink" title="Four Concrete Profiles"></a>Four Concrete Profiles</h2><p>shadox currently provides only four profiles, and they are intentionally concrete.</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Design Intent</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent-default</code></td>
+<td>The default agent execution mode: rootless restrictions plus observability. If no write allowlist is configured, the working directory is writable.</td>
+</tr>
+<tr>
+<td><code>read-only</code></td>
+<td>Denies filesystem writes by default. Useful for exploration, reading, and diagnostics.</td>
+</tr>
+<tr>
+<td><code>workspace-write</code></td>
+<td>Expresses the common case where an agent should only write inside the workspace.</td>
+</tr>
+<tr>
+<td><code>permissive-observe</code></td>
+<td>A trusted diagnostics mode that weakens filesystem restriction while keeping telemetry and reporting enabled.</td>
+</tr>
+</tbody></table>
+<p>These profiles are not container modes or security level labels. They are closer to execution intents for agents.</p>
+<p>For example, <code>read-only</code> does not mean the entire system is immutable. It only means that shadox does not provide a write allowlist by default in its filesystem policy. Users can still explicitly pass <code>--allow-write</code> to broaden the policy. The profile provides a default posture; the effective policy remains the final source of truth.</p>
+<h2 id="Trace-Events-A-Native-Event-Stream-for-Agents"><a href="#Trace-Events-A-Native-Event-Stream-for-Agents" class="headerlink" title="Trace Events: A Native Event Stream for Agents"></a>Trace Events: A Native Event Stream for Agents</h2><p>Each shadox run writes the following files by default:</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.shadox/runs/&lt;timestamp&gt;-&lt;run_id&gt;/trace.jsonl</span><br><span class="line">.shadox/runs/&lt;timestamp&gt;-&lt;run_id&gt;/summary.json</span><br></pre></td></tr></table></figure>
+
+<p><code>trace.jsonl</code> stores one JSON event per line, which makes it suitable for real-time agent consumption. Its structure looks like this:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;schema_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;shadox_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;0.1.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile&quot;</span><span class="punctuation">:</span> <span class="string">&quot;agent-default&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;profile_version&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;ts&quot;</span><span class="punctuation">:</span> <span class="number">1790000000000</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;seq&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;run_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;00000000-0000-0000-0000-000000000000&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;kind&quot;</span><span class="punctuation">:</span> <span class="string">&quot;process.spawn&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;pid&quot;</span><span class="punctuation">:</span> <span class="number">1234</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;level&quot;</span><span class="punctuation">:</span> <span class="string">&quot;info&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>The <code>kind</code> field represents the event type. Current event kinds include:</p>
+<ul>
+<li><code>run.start</code></li>
+<li><code>sandbox.policy</code></li>
+<li><code>sandbox.degraded</code></li>
+<li><code>cgroup.detected</code></li>
+<li><code>process.spawn</code></li>
+<li><code>proc.sample</code></li>
+<li><code>stdout.chunk</code></li>
+<li><code>stderr.chunk</code></li>
+<li><code>sandbox.denied</code></li>
+<li><code>observer.finding</code></li>
+<li><code>process.exit</code></li>
+<li><code>run.summary</code></li>
+</ul>
+<p>The fields <code>schema_version</code> and <code>profile_version</code> are especially important. Many tools focus only on “making it run” in the beginning, then discover later that their output format has no versioning, which makes integration painful. shadox treats trace and summary as formal contracts from the first version, not as temporary logs. This gives the schema room to evolve.</p>
+<h2 id="Summary-Not-Just-What-Failed-But-What-to-Do-Next"><a href="#Summary-Not-Just-What-Failed-But-What-to-Do-Next" class="headerlink" title="Summary: Not Just What Failed, But What to Do Next"></a>Summary: Not Just What Failed, But What to Do Next</h2><p><code>summary.json</code> is the structured report produced after a run. It does not simply record an exit code. It tries to answer questions that are more useful to agents:</p>
+<ul>
+<li>Did the command exit successfully?</li>
+<li>If it failed, was it a timeout, signal, seccomp denial, Landlock-like denial, OOM-like failure, or ordinary non-zero exit?</li>
+<li>Is the classification high, medium, or low confidence?</li>
+<li>What evidence supports the classification?</li>
+<li>How many bytes were written to stdout and stderr, and what are the output tails?</li>
+<li>Did the observer script emit any findings?</li>
+<li>What should the agent inspect next?</li>
+</ul>
+<p>For example, if a command was likely denied by Landlock, the summary may include a hint like this:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;code&quot;</span><span class="punctuation">:</span> <span class="string">&quot;landlock_fs_allowlist&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;severity&quot;</span><span class="punctuation">:</span> <span class="string">&quot;warn&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;message&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Filesystem access was likely denied by the effective Landlock allowlist.&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;action&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Add the required path to fs.read or fs.write, or pass --allow-read/--allow-write for this run.&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;tags&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;landlock&quot;</span><span class="punctuation">,</span> <span class="string">&quot;filesystem&quot;</span><span class="punctuation">,</span> <span class="string">&quot;policy&quot;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>This is where shadox becomes differentiated. It is not only applying restrictions. It turns the result of those restrictions into diagnoses that an agent can understand. With these traces, an agent can get more reliable feedback for multi-step planning, failure recovery, and policy adjustment.</p>
+<h2 id="Why-Landlock-seccomp-and-Rhai"><a href="#Why-Landlock-seccomp-and-Rhai" class="headerlink" title="Why Landlock, seccomp, and Rhai"></a>Why Landlock, seccomp, and Rhai</h2><p>Linux has many sandboxing primitives. shadox v1 chooses a set that is lightweight, rootless-friendly, and clear in implementation scope.</p>
+<p><a href="https://docs.kernel.org/userspace-api/landlock.html">Landlock</a> is an unprivileged access-control mechanism in Linux. It is suitable for letting a process restrict filesystem permissions for itself and its future child processes. Compared with the traditional model of acquiring privileges first and then dropping them, Landlock is a better fit for ordinary user-space programs that want to voluntarily confine themselves.</p>
+<p><a href="https://docs.kernel.org/userspace-api/seccomp_filter.html">seccomp filter</a> is used to filter syscalls. shadox v1 uses a conservative blocklist rather than an aggressive allowlist. This is not because blocklists are safer. It is because the v1 goal is to keep ordinary CLI programs usable while blocking a set of clearly dangerous or unsuitable syscalls for agent execution scenarios. Stricter allowlist profiles can come in later versions.</p>
+<p>For programmable observation, shadox uses <a href="https://docs.rs/rhai/latest/rhai/">Rhai</a>. The reason is straightforward: Rhai is an embedded scripting language in the Rust ecosystem, and it is lightweight enough for this use case. In v1, Rhai scripts can only observe events and return findings; they cannot modify sandbox policy.</p>
+<p>I also considered Lua and a Python SDK. But in terms of Rust integration and runtime weight, Rhai is a better fit for this stage. The observability logic we need is usually simple, so introducing a heavier runtime is unnecessary. Rhai-style code is also relatively easy for modern LLMs to generate and understand.</p>
+<p>A simple observer rule looks like this:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">fn on_event(event) &#123;</span><br><span class="line">    if event.kind == &quot;stderr.chunk&quot; &#123;</span><br><span class="line">        return #&#123;</span><br><span class="line">            message: &quot;process wrote to stderr&quot;,</span><br><span class="line">            severity: &quot;warn&quot;,</span><br><span class="line">            tags: [&quot;stderr&quot;, &quot;agent&quot;]</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>The important constraint is this: scripts can interpret events, but they cannot change security policy. Otherwise, “programmable observation” can easily turn into “programmable bypass”.</p>
+<h2 id="Comparison-with-Existing-Projects"><a href="#Comparison-with-Existing-Projects" class="headerlink" title="Comparison with Existing Projects"></a>Comparison with Existing Projects</h2><p>shadox is not the first rootless sandbox, and it is not trying to replace existing tools.</p>
+<p>For example, <a href="https://github.com/containers/bubblewrap">bubblewrap</a> is a mature unprivileged sandbox construction tool, but it is closer to a low-level building block and does not itself promise a fixed security policy. Firejail, nsjail, and gVisor each have more complete capabilities in desktop application isolation, CTF&#x2F;fuzzing&#x2F;service sandboxing, and container sandboxing.</p>
+<p>The differentiation of shadox is not “it can call seccomp and Landlock too”. Those are basic capabilities, not the moat.</p>
+<p>The real differentiation should be:</p>
+<blockquote>
+<p>Designing sandbox execution as a data product that agents can understand and use.</p>
+</blockquote>
+<p>In other words, the core output of shadox is not merely an isolated process. It is an execution report:</p>
+<ul>
+<li>What was the policy?</li>
+<li>What was the budget?</li>
+<li>What happened during execution?</li>
+<li>Which outputs deserve attention?</li>
+<li>Why did it fail?</li>
+<li>How confident is the diagnosis?</li>
+<li>What should change next?</li>
+</ul>
+<p>If a traditional sandbox is a wall, shadox is closer to an execution cabin with a black box.</p>
+<h2 id="Current-Limitations"><a href="#Current-Limitations" class="headerlink" title="Current Limitations"></a>Current Limitations</h2><p>shadox should not currently be treated as a hardened security boundary. Turning it into a complete security boundary would require a significant amount of engineering work. Current limitations include:</p>
+<ul>
+<li><code>run</code> only supports Linux, and the project is expected to remain Linux-focused. The Windows side can build the CLI, but <code>run</code> returns a clear unsupported error.</li>
+<li>v1 does not implement network namespace, mount namespace, rootless user namespace, or rootfs management. These are important for containers, especially containers intended for human login, but they are not high-priority for an agent-native sandbox.</li>
+<li>cgroup v2 is used only for ambient stats reading; shadox does not create or manage cgroups.</li>
+<li><code>--trace-syscalls</code> is currently a reserved capability. It records a degraded event and does not pretend to provide a syscall timeline.</li>
+<li>Landlock denials usually appear to the child process as ordinary <code>EACCES</code> or <code>EPERM</code>, so failure classification is labeled with confidence instead of pretending to be 100% certain.</li>
+<li>The basic seccomp profile is a blocklist, not a strict security allowlist.</li>
+</ul>
+<h2 id="Roadmap"><a href="#Roadmap" class="headerlink" title="Roadmap"></a>Roadmap</h2><p>The next steps are:</p>
+<ul>
+<li>diagnostics expansion: make hints closer to executable next actions, such as suggesting the specific path to add to an allowlist;</li>
+<li>Python&#x2F;TypeScript SDKs: keep them as external consumers of JSONL and summary files rather than embedding interpreters;</li>
+<li>optional syscall trace: add an explicitly enabled ptrace-backed syscall timeline;</li>
+<li>file access provenance: record which files a command reads and writes, forming an execution provenance graph;</li>
+<li>agent budget contract: express time, memory, process, output, and write paths as explicit budgets, then report budget consumption in the summary;</li>
+<li>policy diff: compare the effective policies of two runs and explain why one succeeded while the other failed.</li>
+</ul>
+<p>More broadly, shadox aims to become a lightweight execution observation layer for agent runtimes, CI diagnostics, and local automation. The long-term goal is endpoint-side production usability while staying aligned with the lightweight positioning.</p>
+<h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><p>The positioning of shadox can be summarized in one sentence:</p>
+<blockquote>
+<p>A rootless, process-level, agent-observable sandbox runtime for Linux.</p>
+</blockquote>
+<p>It is not a Docker competitor, nor is it a replacement for hardened sandboxes. It tries to solve a more specific problem: when an agent executes commands locally, how do we limit risk, record the process, explain failures, and turn the result into structured data that upper-layer systems can continue to consume?</p>
+<p>If the core abstraction of Docker is the container, the core abstraction shadox wants to refine is <strong>sandboxed run as an explainable event stream</strong>.</p>
+</div><div class="tags"><a class="article-tag" href="/tags/observability/" title="observability">observability</a><a class="article-tag" href="/tags/rust/" title="rust">rust</a><a class="article-tag" href="/tags/linux/" title="linux">linux</a><a class="article-tag" href="/tags/sandbox/" title="sandbox">sandbox</a><a class="article-tag" href="/tags/agent/" title="agent">agent</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="next" href="/2026/06/22/shadox-agent-native-rootless-sandbox/">shadox：Agent-Native 的 Rootless 进程沙箱</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2026/06/22/shadox-agent-native-rootless-sandbox-en/',
+    url: 'https://blog.thejackstudio.com/2026/06/22/shadox-agent-native-rootless-sandbox-en/',
+    title: 'shadox: An Agent-Native Rootless Process Sandbox',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="About"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> Tags</i></div><div class="tagcloud"><a href="/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/tags/accelerator/" style="font-size: 15px;" title="accelerator">accelerator</a><a href="/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/tags/emerging-hardware/" style="font-size: 15px;" title="emerging-hardware">emerging-hardware</a><a href="/tags/gpu/" style="font-size: 15px;" title="gpu">gpu</a><a href="/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> Recent</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/" title="shadox: An Agent-Native Rootless Process Sandbox">shadox: An Agent-Native Rootless Process Sandbox</a></li><li><a href="/2025/03/31/gpu-database/" title="Driving Database Innovation with GPU Acceleration">Driving Database Innovation with GPU Acceleration</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024-en/" title="Tabular Representation Learning (TRL): 2024 Review and Outlook">Tabular Representation Learning (TRL): 2024 Review and Outlook</a></li><li><a href="/2023/04/17/availability-metrics-math-en/" title="Understanding Availability Metrics and Their Mathematical Foundations">Understanding Availability Metrics and Their Mathematical Foundations</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/" title="Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</a></li><li><a href="/2019/08/21/large-scale-data-processing-en/" title="Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference-en/" title="Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> Links</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="Copied!"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

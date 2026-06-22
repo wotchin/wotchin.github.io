@@ -1,0 +1,226 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="A systems-oriented review of large-scale data processing: ACID, CAP, BASE, PACELC, MapReduce, Spark, NoSQL, NewSQL, cloud data warehouses, lakehouse, streaming, HTAP, governance, and AI-era data infrastructure."><meta property="og:title" content="Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP | Jack's AI Studio"><meta property="og:description" content="A systems-oriented review of large-scale data processing: ACID, CAP, BASE, PACELC, MapReduce, Spark, NoSQL, NewSQL, cloud data warehouses, lakehouse, streaming, HTAP, governance, and AI-era data infrastructure."><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2019/08/21/large-scale-data-processing-en/"><title>Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> Home</i></a><a href="/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a class="active" href="/2019/08/21/large-scale-data-processing-en/">EN</a><span>/</span><a href="/2019/08/21/large-scale-data-processing/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</h1><div class="post-dek">A systems-oriented review of large-scale data processing: ACID, CAP, BASE, PACELC, MapReduce, Spark, NoSQL, NewSQL, cloud data warehouses, lakehouse, streaming, HTAP, governance, and AI-era data infrastructure.</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2019-08-21</span></span><span class="meta-item"><span class="meta-label">Updated</span><span>2026-06-22</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>8 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/English/">English</a></span></div><div class="post-language-link"><a href="/2019/08/21/large-scale-data-processing/">阅读中文版</a></div><a class="disqus-comment-count" data-disqus-identifier="2019/08/21/large-scale-data-processing-en/" href="/2019/08/21/large-scale-data-processing-en/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">Contents</div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Why-Large-Scale-Data-Processing-Exists"><span class="toc-number">1.</span> <span class="toc-text">Why Large-Scale Data Processing Exists</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Theoretical-Foundations-ACID-CAP-BASE-and-PACELC"><span class="toc-number">2.</span> <span class="toc-text">Theoretical Foundations: ACID, CAP, BASE, and PACELC</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#MapReduce-Batch-Processing-as-a-System-Model"><span class="toc-number">3.</span> <span class="toc-text">MapReduce: Batch Processing as a System Model</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Spark-and-the-DAG-Era"><span class="toc-number">4.</span> <span class="toc-text">Spark and the DAG Era</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#NoSQL-NewSQL-and-the-Database-Landscape"><span class="toc-number">5.</span> <span class="toc-text">NoSQL, NewSQL, and the Database Landscape</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#MPP-and-Cloud-Data-Warehouses"><span class="toc-number">6.</span> <span class="toc-text">MPP and Cloud Data Warehouses</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Data-Lake-and-Lakehouse"><span class="toc-number">7.</span> <span class="toc-text">Data Lake and Lakehouse</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Streaming-Systems"><span class="toc-number">8.</span> <span class="toc-text">Streaming Systems</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#HTAP-Bridging-Transactions-and-Analytics"><span class="toc-number">9.</span> <span class="toc-text">HTAP: Bridging Transactions and Analytics</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Query-Optimization-and-Execution"><span class="toc-number">10.</span> <span class="toc-text">Query Optimization and Execution</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Governance-Quality-and-Metadata"><span class="toc-number">11.</span> <span class="toc-text">Governance, Quality, and Metadata</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Data-Infrastructure-in-the-AI-Era"><span class="toc-number">12.</span> <span class="toc-text">Data Infrastructure in the AI Era</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#How-to-Choose-a-System"><span class="toc-number">13.</span> <span class="toc-text">How to Choose a System</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Conclusion"><span class="toc-number">14.</span> <span class="toc-text">Conclusion</span></a></li></ol></div></div><div class="post-content"><h1 id="Why-Large-Scale-Data-Processing-Exists"><a href="#Why-Large-Scale-Data-Processing-Exists" class="headerlink" title="Why Large-Scale Data Processing Exists"></a>Why Large-Scale Data Processing Exists</h1><p>Large-scale data processing systems were not invented because engineers like complicated architectures. They appeared because a single machine, a single database, or a single storage engine could no longer satisfy the requirements of modern applications.</p>
+<p>The core pressures are familiar:</p>
+<ul>
+<li>Data volume grows faster than single-machine capacity.</li>
+<li>Business decisions require both historical analysis and fresh data.</li>
+<li>Applications need to serve users while analytics systems process the same data.</li>
+<li>Failures are normal at scale, so systems must continue operating through partial failure.</li>
+<li>Cost matters, especially when storage and compute grow independently.</li>
+</ul>
+<p>From early MapReduce to modern lakehouse, streaming, and HTAP systems, the history of large-scale data processing is essentially the history of balancing consistency, availability, latency, throughput, cost, and operational complexity.</p>
+<h1 id="Theoretical-Foundations-ACID-CAP-BASE-and-PACELC"><a href="#Theoretical-Foundations-ACID-CAP-BASE-and-PACELC" class="headerlink" title="Theoretical Foundations: ACID, CAP, BASE, and PACELC"></a>Theoretical Foundations: ACID, CAP, BASE, and PACELC</h1><p>Before discussing systems, it is worth revisiting the basic theory. Large-scale data systems are shaped by trade-offs, and those trade-offs are not optional.</p>
+<p>ACID is the traditional transaction model:</p>
+<ul>
+<li>Atomicity: a transaction either completes fully or has no effect.</li>
+<li>Consistency: a transaction preserves declared constraints and invariants.</li>
+<li>Isolation: concurrent transactions should not interfere in invalid ways.</li>
+<li>Durability: once committed, data should survive failures.</li>
+</ul>
+<p>ACID is powerful, but it becomes harder to preserve with low latency when data is distributed across machines and regions.</p>
+<p>CAP is the classic distributed-systems framing. Under a network partition, a distributed system must choose between consistency and availability.</p>
+<p><img src="/2019/08/21/large-scale-data-processing/large-scale-data-processing-0.png" alt="CAP theorem as a visual guide to consistency, availability, and partition tolerance"></p>
+<p>CAP is often misunderstood. It does not say a system can only ever choose two of C, A, and P. Network partitions are unavoidable in distributed systems, so the real question is what the system does during a partition. Does it reject requests to preserve consistency, or serve requests that may temporarily diverge?</p>
+<p>BASE is a more pragmatic model often associated with large-scale distributed stores:</p>
+<ul>
+<li>Basically Available.</li>
+<li>Soft state.</li>
+<li>Eventual consistency.</li>
+</ul>
+<p>BASE does not mean “no consistency.” It means the system accepts temporary inconsistency in exchange for availability and scalability, then relies on reconciliation, compaction, anti-entropy, or application logic to converge.</p>
+<p>PACELC extends CAP by pointing out that even when there is no partition, distributed systems still face a trade-off between latency and consistency:</p>
+<ul>
+<li>If there is a Partition, choose between Availability and Consistency.</li>
+<li>Else, choose between Latency and Consistency.</li>
+</ul>
+<p>This is closer to day-to-day engineering reality. Most of the time, the system is not in a dramatic partition. It is simply deciding how much coordination is worth paying for on every request.</p>
+<h1 id="MapReduce-Batch-Processing-as-a-System-Model"><a href="#MapReduce-Batch-Processing-as-a-System-Model" class="headerlink" title="MapReduce: Batch Processing as a System Model"></a>MapReduce: Batch Processing as a System Model</h1><p>MapReduce made large-scale batch processing accessible by reducing distributed computation to two functions: map and reduce.</p>
+<p>The programmer writes:</p>
+<ul>
+<li>A map function that transforms input records into intermediate key-value pairs.</li>
+<li>A reduce function that aggregates values with the same key.</li>
+</ul>
+<p>The runtime handles partitioning, scheduling, retries, data locality, and failure recovery.</p>
+<p>The strength of MapReduce is its simplicity. It made it possible to process massive datasets on unreliable commodity machines. The model is naturally fault tolerant because intermediate work can be recomputed.</p>
+<p>The limitation is also obvious: MapReduce is batch-oriented and disk-heavy. Many algorithms require multiple chained jobs, and each stage writes intermediate data. This makes iterative algorithms and interactive analysis inefficient.</p>
+<p>MapReduce is important not only as a technology, but as a design philosophy: make distributed processing understandable by constraining the programming model.</p>
+<h1 id="Spark-and-the-DAG-Era"><a href="#Spark-and-the-DAG-Era" class="headerlink" title="Spark and the DAG Era"></a>Spark and the DAG Era</h1><p>Spark improved on MapReduce by introducing a more general DAG execution engine and in-memory computation.</p>
+<p>Instead of forcing every computation into map and reduce stages, Spark represents work as a directed acyclic graph. The engine can optimize stages, keep intermediate data in memory, and support iterative workloads more efficiently.</p>
+<p>This made Spark useful for:</p>
+<ul>
+<li>ETL pipelines.</li>
+<li>Interactive analytics.</li>
+<li>Machine learning.</li>
+<li>Graph computation.</li>
+<li>Streaming-like workloads through micro-batching.</li>
+</ul>
+<p>Spark also helped popularize the idea that a data processing system should provide multiple APIs over one execution engine: SQL, DataFrame, RDD, MLlib, GraphX, and Structured Streaming.</p>
+<p>However, Spark does not eliminate the hard problems. Shuffle remains expensive. Memory pressure can be difficult to tune. Small files, data skew, and inefficient joins can still destroy performance. Spark gives engineers a powerful engine, but not immunity from distributed-system physics.</p>
+<h1 id="NoSQL-NewSQL-and-the-Database-Landscape"><a href="#NoSQL-NewSQL-and-the-Database-Landscape" class="headerlink" title="NoSQL, NewSQL, and the Database Landscape"></a>NoSQL, NewSQL, and the Database Landscape</h1><p>As web-scale applications grew, traditional relational systems faced pressure from new workload patterns: massive write volume, flexible schema, low-latency key-value access, global replication, and horizontal scalability.</p>
+<p>NoSQL systems emerged to address these needs. The family includes key-value stores, document stores, wide-column stores, and graph databases. Many of them relaxed relational constraints and strong transaction semantics in exchange for scale, availability, and operational flexibility.</p>
+<p><img src="/2019/08/21/large-scale-data-processing/large-scale-data-processing-1.jpg" alt="A historical database landscape map covering NoSQL, relational, analytic, and NewSQL systems"></p>
+<p>NewSQL systems took a different path. They tried to preserve SQL and transactional semantics while scaling horizontally. Google Spanner is the canonical example: it combines distributed consensus, synchronized clocks, and SQL semantics to provide external consistency at global scale.</p>
+<p>The important lesson is that “database” stopped being a single category. Different systems optimize for different parts of the design space:</p>
+<ul>
+<li>OLTP systems optimize for high-concurrency transactions.</li>
+<li>OLAP systems optimize for analytical scans and aggregations.</li>
+<li>Key-value systems optimize for simple low-latency access.</li>
+<li>Search systems optimize for retrieval and relevance.</li>
+<li>Graph systems optimize for relationship traversal.</li>
+<li>Stream systems optimize for continuous computation.</li>
+</ul>
+<p>Modern data architecture is rarely one database. It is an ecosystem.</p>
+<h1 id="MPP-and-Cloud-Data-Warehouses"><a href="#MPP-and-Cloud-Data-Warehouses" class="headerlink" title="MPP and Cloud Data Warehouses"></a>MPP and Cloud Data Warehouses</h1><p>Massively Parallel Processing, or MPP, databases divide query execution across many nodes. A coordinator plans the query, data nodes scan and process partitions, and the system exchanges data for joins and aggregations.</p>
+<p><img src="/2019/08/21/large-scale-data-processing/large-scale-data-processing-2.jpg" alt="A simplified MPP database architecture with coordinators, transaction manager, and data nodes"></p>
+<p>MPP systems work well for analytical workloads because large scans and aggregations can be parallelized. Classic data warehouses, and later cloud data warehouses, build heavily on this idea.</p>
+<p>Cloud data warehouses changed the cost and operations model. Systems such as BigQuery, Snowflake, Redshift, and cloud-native analytic engines made it normal to separate storage and compute, scale compute elastically, and treat infrastructure management as part of the service.</p>
+<p>The central architectural shift is decoupling:</p>
+<ul>
+<li>Storage can be cheap, durable, and shared.</li>
+<li>Compute can be elastic and workload-specific.</li>
+<li>Metadata and governance can become platform-level services.</li>
+</ul>
+<p>This shift also prepared the ground for the lakehouse architecture.</p>
+<h1 id="Data-Lake-and-Lakehouse"><a href="#Data-Lake-and-Lakehouse" class="headerlink" title="Data Lake and Lakehouse"></a>Data Lake and Lakehouse</h1><p>A data lake stores raw and processed data in open formats, often on object storage. It is flexible and cheap, but early data lakes often became “data swamps” because they lacked strong metadata, schema management, quality control, and transactional guarantees.</p>
+<p>The lakehouse architecture attempts to combine the flexibility of data lakes with the management features of warehouses. Technologies such as Delta Lake, Apache Iceberg, and Apache Hudi add table formats, transaction logs, schema evolution, time travel, and incremental processing on top of object storage.</p>
+<p>The lakehouse idea is attractive because it reduces duplication. Instead of copying data repeatedly between lakes, warehouses, feature stores, and ML platforms, teams can maintain shared data tables with better governance.</p>
+<p>This is especially important in the AI era. Model training, feature engineering, evaluation, and analytics often need access to the same governed data assets.</p>
+<h1 id="Streaming-Systems"><a href="#Streaming-Systems" class="headerlink" title="Streaming Systems"></a>Streaming Systems</h1><p>Batch systems answer questions about data that has already accumulated. Streaming systems process events as they arrive.</p>
+<p>The key difference is not just latency. Streaming introduces a different model of time:</p>
+<ul>
+<li>Event time: when the event actually happened.</li>
+<li>Processing time: when the system observed it.</li>
+<li>Watermark: the system’s estimate of how complete an event-time window is.</li>
+<li>Late data: events that arrive after the expected window.</li>
+</ul>
+<p>Systems such as Kafka, Flink, Spark Structured Streaming, and Pulsar address different parts of this space.</p>
+<p>Streaming is essential for:</p>
+<ul>
+<li>Real-time monitoring.</li>
+<li>Fraud detection.</li>
+<li>Recommendations.</li>
+<li>User behavior analytics.</li>
+<li>CDC pipelines.</li>
+<li>Operational alerting.</li>
+</ul>
+<p>The hard problems are state management, exactly-once semantics, backpressure, ordering, late events, and operational debugging. A streaming job is not simply a faster batch job. It is a long-running distributed application.</p>
+<h1 id="HTAP-Bridging-Transactions-and-Analytics"><a href="#HTAP-Bridging-Transactions-and-Analytics" class="headerlink" title="HTAP: Bridging Transactions and Analytics"></a>HTAP: Bridging Transactions and Analytics</h1><p>HTAP, Hybrid Transactional and Analytical Processing, aims to support OLTP and OLAP workloads over the same or closely synchronized data.</p>
+<p>The motivation is clear. Traditional architectures often move data from transactional databases into warehouses through ETL or CDC pipelines. This introduces delay, complexity, and consistency gaps. HTAP systems try to reduce that gap.</p>
+<p>Common approaches include:</p>
+<ul>
+<li>Row-store and column-store hybrids.</li>
+<li>Replicating transactional changes into analytical replicas.</li>
+<li>Shared storage with different execution engines.</li>
+<li>MVCC-based snapshots for analytical queries.</li>
+</ul>
+<p>HTAP is difficult because OLTP and OLAP have conflicting access patterns. OLTP wants low-latency point reads and writes. OLAP wants large scans, joins, and aggregations. A good HTAP system must isolate these workloads while keeping data fresh.</p>
+<h1 id="Query-Optimization-and-Execution"><a href="#Query-Optimization-and-Execution" class="headerlink" title="Query Optimization and Execution"></a>Query Optimization and Execution</h1><p>No large-scale data system can avoid query optimization.</p>
+<p>The optimizer decides join order, access paths, partition pruning, predicate pushdown, aggregation strategy, and data exchange. The execution engine then turns the plan into operators that run across nodes.</p>
+<p>At scale, small mistakes become expensive:</p>
+<ul>
+<li>A bad join order can multiply intermediate data.</li>
+<li>Missing statistics can mislead the optimizer.</li>
+<li>Data skew can overload a few tasks.</li>
+<li>Excessive shuffle can dominate runtime.</li>
+<li>Too many small files can overwhelm metadata and scheduling.</li>
+</ul>
+<p>This is why data engineering is not only about writing SQL or Spark code. It is also about understanding physical execution.</p>
+<h1 id="Governance-Quality-and-Metadata"><a href="#Governance-Quality-and-Metadata" class="headerlink" title="Governance, Quality, and Metadata"></a>Governance, Quality, and Metadata</h1><p>As data systems grow, governance becomes part of the architecture rather than an afterthought.</p>
+<p>Important capabilities include:</p>
+<ul>
+<li>Catalog and lineage.</li>
+<li>Schema evolution.</li>
+<li>Access control.</li>
+<li>Data quality checks.</li>
+<li>Audit logging.</li>
+<li>Privacy and compliance controls.</li>
+<li>Ownership and lifecycle management.</li>
+</ul>
+<p>Without metadata, large-scale data platforms become difficult to trust. Without trust, data products do not scale across teams.</p>
+<p>This is also where systems such as Unity Catalog and cloud-native governance platforms become important. They provide a control plane for data assets, permissions, lineage, and discovery.</p>
+<h1 id="Data-Infrastructure-in-the-AI-Era"><a href="#Data-Infrastructure-in-the-AI-Era" class="headerlink" title="Data Infrastructure in the AI Era"></a>Data Infrastructure in the AI Era</h1><p>AI changes the requirements for data infrastructure.</p>
+<p>Traditional analytics mostly asked: what happened, why did it happen, and what should we report? AI systems ask additional questions:</p>
+<ul>
+<li>Is the training data representative?</li>
+<li>Can we reproduce a model run?</li>
+<li>Which features were available at prediction time?</li>
+<li>Is the data fresh enough for retrieval or agent workflows?</li>
+<li>Can we trace a model output back to data sources?</li>
+<li>Can we control access to sensitive data used by models?</li>
+</ul>
+<p>This makes data infrastructure more tightly connected with feature stores, vector databases, embedding pipelines, retrieval systems, evaluation datasets, and model observability.</p>
+<p>The line between data platform and AI platform is becoming thinner.</p>
+<h1 id="How-to-Choose-a-System"><a href="#How-to-Choose-a-System" class="headerlink" title="How to Choose a System"></a>How to Choose a System</h1><p>There is no universal best system. The right choice depends on the workload.</p>
+<p>For high-concurrency transactional workloads, choose a system with strong transaction support and predictable latency.</p>
+<p>For large analytical scans, choose a warehouse or lakehouse engine with good columnar execution, pruning, and cost control.</p>
+<p>For real-time event processing, choose a streaming system with strong state management and operational tooling.</p>
+<p>For search and retrieval, use systems optimized for indexing and relevance.</p>
+<p>For AI workloads, consider not only storage and compute, but also metadata, lineage, feature consistency, vector search, governance, and reproducibility.</p>
+<p>The best architecture is usually not the most fashionable one. It is the one whose trade-offs match the business problem.</p>
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>Large-scale data processing systems evolved through a sequence of trade-offs. MapReduce made distributed batch processing simple. Spark generalized the execution model and improved iterative workloads. NoSQL and NewSQL explored different points in the consistency-scale design space. Cloud warehouses decoupled storage and compute. Lakehouse systems brought transactions and governance to object storage. Streaming systems made event-time processing practical. HTAP tried to close the gap between transactional freshness and analytical power.</p>
+<p>The underlying logic has not changed: distributed systems force trade-offs among consistency, availability, latency, cost, and complexity.</p>
+<p>What has changed is the workload. In the AI era, data platforms are no longer only reporting systems. They are becoming the substrate for models, agents, retrieval, evaluation, governance, and product intelligence. That raises the bar for correctness, freshness, observability, and trust.</p>
+</div><div class="tags"><a class="article-tag" href="/tags/database/" title="database">database</a><a class="article-tag" href="/tags/big-data/" title="big-data">big-data</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2020/02/10/optimistic-pessimistic-lock-in-database/">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</a><a class="next" href="/2019/08/21/large-scale-data-processing/">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2019/08/21/large-scale-data-processing-en/',
+    url: 'https://blog.thejackstudio.com/2019/08/21/large-scale-data-processing-en/',
+    title: 'Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="About"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> Tags</i></div><div class="tagcloud"><a href="/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/tags/accelerator/" style="font-size: 15px;" title="accelerator">accelerator</a><a href="/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/tags/emerging-hardware/" style="font-size: 15px;" title="emerging-hardware">emerging-hardware</a><a href="/tags/gpu/" style="font-size: 15px;" title="gpu">gpu</a><a href="/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> Recent</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/" title="shadox: An Agent-Native Rootless Process Sandbox">shadox: An Agent-Native Rootless Process Sandbox</a></li><li><a href="/2025/03/31/gpu-database/" title="Driving Database Innovation with GPU Acceleration">Driving Database Innovation with GPU Acceleration</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024-en/" title="Tabular Representation Learning (TRL): 2024 Review and Outlook">Tabular Representation Learning (TRL): 2024 Review and Outlook</a></li><li><a href="/2023/04/17/availability-metrics-math-en/" title="Understanding Availability Metrics and Their Mathematical Foundations">Understanding Availability Metrics and Their Mathematical Foundations</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/" title="Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</a></li><li><a href="/2019/08/21/large-scale-data-processing-en/" title="Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference-en/" title="Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> Links</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="Copied!"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

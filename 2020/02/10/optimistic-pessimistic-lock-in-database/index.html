@@ -1,0 +1,198 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="用更系统的方式理解乐观锁、悲观锁、MVCC、事务隔离级别和高并发业务中的并发控制取舍。"><meta property="og:title" content="数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别 | Jack's AI Studio"><meta property="og:description" content="用更系统的方式理解乐观锁、悲观锁、MVCC、事务隔离级别和高并发业务中的并发控制取舍。"><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2020/02/10/optimistic-pessimistic-lock-in-database/"><title>数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别 | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a href="/zh/"><i class="fa fa-home"> 首页</i></a><a href="/zh/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/zh/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> 关于</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/">EN</a><span>/</span><a class="active" href="/2020/02/10/optimistic-pessimistic-lock-in-database/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</h1><div class="post-dek">用更系统的方式理解乐观锁、悲观锁、MVCC、事务隔离级别和高并发业务中的并发控制取舍。</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2020-02-10</span></span><span class="meta-item"><span class="meta-label">Updated</span><span>2026-06-21</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>10 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/Chinese/">Chinese</a></span></div><div class="post-language-link"><a href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/">Read in English</a></div><a class="disqus-comment-count" data-disqus-identifier="2020/02/10/optimistic-pessimistic-lock-in-database/" href="/2020/02/10/optimistic-pessimistic-lock-in-database/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">文章目录</div><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E5%85%B8%E5%9E%8B%E9%97%AE%E9%A2%98%EF%BC%9A%E5%BA%93%E5%AD%98%E6%89%A3%E5%87%8F"><span class="toc-number">1.</span> <span class="toc-text">一个典型问题：库存扣减</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%82%B2%E8%A7%82%E9%94%81%EF%BC%9A%E5%85%88%E5%8D%A0%E4%BD%8F%E8%B5%84%E6%BA%90%EF%BC%8C%E5%86%8D%E5%81%9A%E4%BF%AE%E6%94%B9"><span class="toc-number">2.</span> <span class="toc-text">悲观锁：先占住资源，再做修改</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%90%E8%A7%82%E9%94%81%EF%BC%9A%E5%85%88%E6%89%A7%E8%A1%8C%EF%BC%8C%E6%8F%90%E4%BA%A4%E6%97%B6%E6%A3%80%E6%B5%8B%E5%86%B2%E7%AA%81"><span class="toc-number">3.</span> <span class="toc-text">乐观锁：先执行，提交时检测冲突</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ABA-%E9%97%AE%E9%A2%98%E4%B8%8E%E7%89%88%E6%9C%AC%E5%8F%B7"><span class="toc-number">4.</span> <span class="toc-text">ABA 问题与版本号</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%EF%BC%9A%E8%AF%BB%E5%86%99%E5%B9%B6%E5%8F%91%E7%9A%84%E5%8F%A6%E4%B8%80%E6%9D%A1%E4%B8%BB%E7%BA%BF"><span class="toc-number">5.</span> <span class="toc-text">MVCC：读写并发的另一条主线</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E5%BC%82%E5%B8%B8%E7%8E%B0%E8%B1%A1"><span class="toc-number">6.</span> <span class="toc-text">隔离级别与异常现象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%8E%E4%B9%88%E9%80%89%E6%8B%A9"><span class="toc-number">7.</span> <span class="toc-text">怎么选择</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF"><span class="toc-number">8.</span> <span class="toc-text">常见错误</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">9.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">10.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="post-content"><p>数据库并发控制最容易被讲成一句话：“冲突少用乐观锁，冲突多用悲观锁。”这句话没有错，但太粗糙。真正落到业务系统里，问题通常不是“选乐观还是悲观”这么简单，而是：</p>
+<ul>
+<li>这个业务能不能接受失败重试？</li>
+<li>读到的是不是一个一致的快照？</li>
+<li>冲突发生时，是等待、失败、重试，还是降级？</li>
+<li>锁的粒度在哪里：行、索引范围、业务对象、库存桶，还是分布式资源？</li>
+<li>数据库隔离级别已经帮我们解决了什么，又没有解决什么？</li>
+</ul>
+<p>本文尝试把“乐观锁&#x2F;悲观锁”放回数据库并发控制的大框架里看。</p>
+<h2 id="一个典型问题：库存扣减"><a href="#一个典型问题：库存扣减" class="headerlink" title="一个典型问题：库存扣减"></a>一个典型问题：库存扣减</h2><p>假设有一张库存表：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> inventory (</span><br><span class="line">  sku_id <span class="type">BIGINT</span> <span class="keyword">PRIMARY</span> KEY,</span><br><span class="line">  stock <span class="type">INT</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  version <span class="type">BIGINT</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>,</span><br><span class="line">  updated_at <span class="type">TIMESTAMP</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>如果两个请求同时购买同一个 <code>sku_id</code>，最危险的情况是“丢失更新”：两个事务都读到 <code>stock = 1</code>，然后都认为可以扣减，最终库存被扣成错误状态，或者卖出了超过库存的商品。</p>
+<p>并发控制的目标不是“加锁”本身，而是在正确性、吞吐、延迟和失败体验之间做取舍。</p>
+<h2 id="悲观锁：先占住资源，再做修改"><a href="#悲观锁：先占住资源，再做修改" class="headerlink" title="悲观锁：先占住资源，再做修改"></a>悲观锁：先占住资源，再做修改</h2><p>悲观锁的核心假设是：冲突很可能发生，所以先把要修改的资源锁住。数据库里最常见的写法是 <code>SELECT ... FOR UPDATE</code>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">BEGIN</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> stock</span><br><span class="line"><span class="keyword">FROM</span> inventory</span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line"><span class="keyword">FOR</span> <span class="keyword">UPDATE</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> stock <span class="operator">-</span> <span class="number">1</span>,</span><br><span class="line">    updated_at <span class="operator">=</span> NOW()</span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> stock <span class="operator">&gt;</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这段逻辑的语义是：事务先获取目标行的排他性锁，其他想更新同一行的事务需要等待当前事务提交或回滚。PostgreSQL 文档把这类能力放在 explicit locking 中讨论；MySQL InnoDB 文档也把 <code>FOR UPDATE</code> 归为 locking read，用于读取后即将修改的场景。</p>
+<p>悲观锁适合这些场景：</p>
+<ul>
+<li>冲突概率高，例如热点库存、账户余额、优惠券核销。</li>
+<li>失败重试成本高，例如支付、资金记账、库存强一致扣减。</li>
+<li>业务流程短，锁持有时间可控。</li>
+<li>需要明确的串行化效果，而不是让上层业务猜测冲突。</li>
+</ul>
+<p>悲观锁的问题也很明显：</p>
+<ul>
+<li>锁等待会增加 tail latency。</li>
+<li>事务时间越长，吞吐越差。</li>
+<li>多资源加锁顺序不一致时容易死锁。</li>
+<li>如果查询条件没有走合适索引，InnoDB 可能锁住比预期更大的范围。</li>
+</ul>
+<p>因此悲观锁不是“更安全所以总是更好”。它要求业务把事务边界控制得足够短，并且严格保证访问路径和加锁顺序。</p>
+<h2 id="乐观锁：先执行，提交时检测冲突"><a href="#乐观锁：先执行，提交时检测冲突" class="headerlink" title="乐观锁：先执行，提交时检测冲突"></a>乐观锁：先执行，提交时检测冲突</h2><p>乐观锁的核心假设是：大多数情况下不会冲突，所以不提前阻塞其他事务，而是在更新时检查“我读到的版本是否仍然有效”。</p>
+<p>最常见的实现是 version 字段：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> stock, version</span><br><span class="line"><span class="keyword">FROM</span> inventory</span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> stock <span class="operator">-</span> <span class="number">1</span>,</span><br><span class="line">    version <span class="operator">=</span> version <span class="operator">+</span> <span class="number">1</span>,</span><br><span class="line">    updated_at <span class="operator">=</span> NOW()</span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> stock <span class="operator">&gt;</span> <span class="number">0</span></span><br><span class="line">  <span class="keyword">AND</span> version <span class="operator">=</span> :old_version;</span><br></pre></td></tr></table></figure>
+
+<p>如果 <code>UPDATE</code> 影响行数为 1，说明提交成功；如果影响行数为 0，说明版本已经变化，当前请求需要失败、重试，或者重新读取后再计算。</p>
+<p>这类写法本质上是 compare-and-swap。它不依赖长时间持有锁，适合读多写少、冲突低、可以重试的业务。</p>
+<p>乐观锁适合这些场景：</p>
+<ul>
+<li>编辑文章、更新配置、修改用户资料等低冲突业务。</li>
+<li>请求可以安全重试。</li>
+<li>用户可以接受“数据已变化，请刷新后重试”。</li>
+<li>需要减少长事务和锁等待。</li>
+</ul>
+<p>乐观锁的问题是：冲突发生时，成本被推迟到了提交阶段。如果热点很高，大家都执行到最后才失败，系统会浪费大量计算和数据库请求。这就是为什么秒杀、抢券这种场景不能只靠朴素乐观锁硬扛。</p>
+<h2 id="ABA-问题与版本号"><a href="#ABA-问题与版本号" class="headerlink" title="ABA 问题与版本号"></a>ABA 问题与版本号</h2><p>只比较业务值可能有 ABA 问题。比如库存从 <code>10</code> 变成 <code>9</code>，又被补回 <code>10</code>。如果只检查 <code>stock = 10</code>，应用可能误以为这条记录没有变化。</p>
+<p>所以乐观锁通常不只比较业务值，而是比较单调递增的版本：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> stock <span class="operator">-</span> <span class="number">1</span>,</span><br><span class="line">    version <span class="operator">=</span> version <span class="operator">+</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> stock <span class="operator">&gt;</span> <span class="number">0</span></span><br><span class="line">  <span class="keyword">AND</span> version <span class="operator">=</span> :old_version;</span><br></pre></td></tr></table></figure>
+
+<p>版本号把“值是否一样”和“状态是否经历过变化”区分开了。对于审计要求更高的系统，还可以使用 <code>updated_at</code>、全局事务 ID、事件流水号或 append-only ledger 来记录变化历史。</p>
+<h2 id="MVCC：读写并发的另一条主线"><a href="#MVCC：读写并发的另一条主线" class="headerlink" title="MVCC：读写并发的另一条主线"></a>MVCC：读写并发的另一条主线</h2><p>乐观锁和悲观锁通常讨论“写写冲突”，但数据库还要处理“读写并发”。现代关系数据库普遍使用 MVCC，也就是多版本并发控制。</p>
+<p>MVCC 的直觉是：写入不直接覆盖读者正在看的版本，而是保留多个版本，让读事务看到一个一致视图。这样读和写可以减少互相阻塞。PostgreSQL 文档明确把事务隔离和 MVCC 关联起来；InnoDB 也通过 undo log 维护旧版本，从而支持一致性读。</p>
+<p>这会带来一个重要结论：数据库里的“锁”不是唯一的并发控制手段。</p>
+<ul>
+<li>普通 <code>SELECT</code> 可能读取快照，不阻塞写。</li>
+<li><code>UPDATE</code> 仍然需要处理写写冲突。</li>
+<li><code>SELECT ... FOR UPDATE</code> 会把读变成锁定读。</li>
+<li>不同隔离级别下，快照可见性和异常现象不同。</li>
+</ul>
+<p>所以讨论“乐观锁&#x2F;悲观锁”时，必须同时问：当前数据库隔离级别是什么？</p>
+<h2 id="隔离级别与异常现象"><a href="#隔离级别与异常现象" class="headerlink" title="隔离级别与异常现象"></a>隔离级别与异常现象</h2><p>常见隔离级别大致是：</p>
+<ul>
+<li>Read Committed：只能读到已提交数据，但两次查询可能看到不同结果。</li>
+<li>Repeatable Read：事务内多次读取通常看到一致快照。</li>
+<li>Serializable：数据库尽力让并发执行结果等价于某种串行顺序。</li>
+</ul>
+<p>隔离级别解决的是事务之间的可见性和一致性问题，但不等于自动解决所有业务并发问题。比如在 <code>Read Committed</code> 下，两个事务分别读取余额后再更新，如果没有 <code>FOR UPDATE</code> 或原子条件更新，就可能产生丢失更新风险。在更高隔离级别下，数据库可能通过锁、冲突检测或事务回滚来保证语义，但应用仍然需要处理失败重试。</p>
+<p>更好的写法是把条件放进单条更新语句里：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> inventory</span><br><span class="line"><span class="keyword">SET</span> stock <span class="operator">=</span> stock <span class="operator">-</span> <span class="number">1</span>,</span><br><span class="line">    version <span class="operator">=</span> version <span class="operator">+</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">WHERE</span> sku_id <span class="operator">=</span> <span class="number">1001</span></span><br><span class="line">  <span class="keyword">AND</span> stock <span class="operator">&gt;=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这比“先查再改”更安全，因为检查和更新由数据库在一个写操作中完成。许多库存扣减场景可以先用这种原子条件更新解决，而不是一上来就开启长事务。</p>
+<h2 id="怎么选择"><a href="#怎么选择" class="headerlink" title="怎么选择"></a>怎么选择</h2><p>一个实用判断框架如下：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐思路</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>冲突低，失败可重试</td>
+<td>乐观锁，version 字段</td>
+</tr>
+<tr>
+<td>冲突高，业务流程短</td>
+<td>悲观锁，<code>SELECT ... FOR UPDATE</code></td>
+</tr>
+<tr>
+<td>单行条件扣减</td>
+<td>原子 <code>UPDATE ... WHERE stock &gt;= n</code></td>
+</tr>
+<tr>
+<td>多行资源转移</td>
+<td>显式事务，固定加锁顺序</td>
+</tr>
+<tr>
+<td>分布式跨库资源</td>
+<td>优先重构边界；必要时用 Saga&#x2F;Outbox&#x2F;TCC</td>
+</tr>
+<tr>
+<td>读多写少配置</td>
+<td>乐观锁 + 用户提示</td>
+</tr>
+<tr>
+<td>金融记账</td>
+<td>append-only ledger + 幂等键 + 强事务</td>
+</tr>
+</tbody></table>
+<p>在工程实践中，我更倾向于按下面的顺序思考：</p>
+<ol>
+<li>能不能把业务变成单条原子 SQL？</li>
+<li>如果不能，能不能缩短事务边界？</li>
+<li>如果冲突低，使用乐观锁和重试。</li>
+<li>如果冲突高，使用悲观锁并控制锁顺序。</li>
+<li>如果跨服务跨库，不要假装一个本地锁能解决分布式一致性。</li>
+</ol>
+<h2 id="常见错误"><a href="#常见错误" class="headerlink" title="常见错误"></a>常见错误</h2><p>第一，事务里做外部调用。比如锁住库存行后调用支付接口，锁会被持有很久，系统延迟和死锁概率都会变差。正确做法通常是先冻结资源、提交事务，再异步推进外部流程。</p>
+<p>第二，只在应用层加锁。单机 <code>synchronized</code>、进程内 mutex 或本地缓存锁无法覆盖多实例部署。真正的共享状态在数据库里，就必须让数据库参与并发控制。</p>
+<p>第三，忘记检查更新行数。乐观锁是否成功不是看 SQL 有没有报错，而是看 <code>affected rows</code> 是否为 1。</p>
+<p>第四，没有幂等。无论乐观锁还是悲观锁，网络重试都可能导致重复请求。订单、支付、库存流水都应该有业务幂等键。</p>
+<p>第五，忽略索引。<code>FOR UPDATE</code> 是否只锁目标行，取决于数据库执行计划和存储引擎行为。高并发路径必须检查执行计划。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>乐观锁和悲观锁不是两个 SQL 技巧，而是两种冲突处理哲学：</p>
+<ul>
+<li>悲观锁把冲突成本前置，用等待换确定性。</li>
+<li>乐观锁把冲突成本后置，用重试换吞吐。</li>
+</ul>
+<p>数据库系统本身还提供 MVCC、隔离级别、行锁、范围锁、唯一约束、原子更新等机制。优秀的并发设计不是迷信某一种锁，而是把业务不变量放到数据库能保证的位置，并让应用层明确处理等待、失败、重试和幂等。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>[1] <a href="https://www.postgresql.org/docs/current/explicit-locking.html">PostgreSQL Documentation: Explicit Locking</a></p>
+<p>[2] <a href="https://www.postgresql.org/docs/current/transaction-iso.html">PostgreSQL Documentation: Transaction Isolation</a></p>
+<p>[3] <a href="https://dev.mysql.com/doc/en/innodb-locking-reads.html">MySQL Reference Manual: InnoDB Locking Reads</a></p>
+<p>[4] <a href="https://dev.mysql.com/doc/refman/8.4/en/innodb-multi-versioning.html">MySQL Reference Manual: InnoDB Multi-Versioning</a></p>
+</div><div class="tags"><a class="article-tag" href="/zh/tags/database/" title="database">database</a><a class="article-tag" href="/zh/tags/software-engineering/" title="software-engineering">software-engineering</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</a><a class="next" href="/2019/08/21/large-scale-data-processing-en/">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2020/02/10/optimistic-pessimistic-lock-in-database/',
+    url: 'https://blog.thejackstudio.com/2020/02/10/optimistic-pessimistic-lock-in-database/',
+    title: '数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/zh/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/zh/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/zh/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/zh/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/zh/tags/information-safety/" style="font-size: 15px;" title="information-safety">information-safety</a><a href="/zh/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/zh/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/zh/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/zh/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/zh/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/zh/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/zh/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/zh/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox/" title="shadox：Agent-Native 的 Rootless 进程沙箱">shadox：Agent-Native 的 Rootless 进程沙箱</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024/" title="表格数据表示学习(TRL)：2024年现状与展望">表格数据表示学习(TRL)：2024年现状与展望</a></li><li><a href="/2023/04/17/availability-metrics-math/" title="深入理解可用性指标及其数学原理">深入理解可用性指标及其数学原理</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database/" title="数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</a></li><li><a href="/2019/08/21/large-scale-data-processing/" title="大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference/" title="Linux IO 多路复用：select、poll、epoll 的区别与内核实现">Linux IO 多路复用：select、poll、epoll 的区别与内核实现</a></li><li><a href="/2016/10/01/%E5%9F%BA%E4%BA%8E%20PHP%20%E7%9A%84%20Webshell%20%E8%87%AA%E5%8A%A8%E6%A3%80%E6%B5%8B%E5%88%8D%E8%AE%AE/" title="基于Php的webshell自动检测刍议">基于Php的webshell自动检测刍议</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

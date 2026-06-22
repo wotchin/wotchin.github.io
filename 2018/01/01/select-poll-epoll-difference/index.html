@@ -1,0 +1,206 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="从系统调用语义、内核数据结构、等待队列、就绪链表和触发模式角度理解 select、poll、epoll。"><meta property="og:title" content="Linux IO 多路复用：select、poll、epoll 的区别与内核实现 | Jack's AI Studio"><meta property="og:description" content="从系统调用语义、内核数据结构、等待队列、就绪链表和触发模式角度理解 select、poll、epoll。"><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2018/01/01/select-poll-epoll-difference/"><title>Linux IO 多路复用：select、poll、epoll 的区别与内核实现 | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Linux IO 多路复用：select、poll、epoll 的区别与内核实现</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a href="/zh/"><i class="fa fa-home"> 首页</i></a><a href="/zh/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/zh/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> 关于</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a href="/2018/01/01/select-poll-epoll-difference-en/">EN</a><span>/</span><a class="active" href="/2018/01/01/select-poll-epoll-difference/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">Linux IO 多路复用：select、poll、epoll 的区别与内核实现</h1><div class="post-dek">从系统调用语义、内核数据结构、等待队列、就绪链表和触发模式角度理解 select、poll、epoll。</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2018-01-01</span></span><span class="meta-item"><span class="meta-label">Updated</span><span>2026-06-21</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>10 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/Chinese/">Chinese</a></span></div><div class="post-language-link"><a href="/2018/01/01/select-poll-epoll-difference-en/">Read in English</a></div><a class="disqus-comment-count" data-disqus-identifier="2018/01/01/select-poll-epoll-difference/" href="/2018/01/01/select-poll-epoll-difference/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">文章目录</div><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#IO-%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E5%88%B0%E5%BA%95%E5%A4%8D%E7%94%A8%E4%BA%86%E4%BB%80%E4%B9%88"><span class="toc-number">1.</span> <span class="toc-text">IO 多路复用到底复用了什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#select%EF%BC%9A%E4%BD%8D%E5%9B%BE%E9%9B%86%E5%90%88%E4%B8%8E%E9%87%8D%E5%A4%8D%E6%89%AB%E6%8F%8F"><span class="toc-number">2.</span> <span class="toc-text">select：位图集合与重复扫描</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#poll%EF%BC%9A%E6%95%B0%E7%BB%84%E5%8F%96%E4%BB%A3%E4%BD%8D%E5%9B%BE%EF%BC%8C%E4%BD%86%E4%BB%8D%E7%84%B6%E7%BA%BF%E6%80%A7%E6%89%AB%E6%8F%8F"><span class="toc-number">3.</span> <span class="toc-text">poll：数组取代位图，但仍然线性扫描</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#epoll%EF%BC%9A%E6%8A%8A%E5%85%B3%E6%B3%A8%E9%9B%86%E5%90%88%E7%95%99%E5%9C%A8%E5%86%85%E6%A0%B8"><span class="toc-number">4.</span> <span class="toc-text">epoll：把关注集合留在内核</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#epoll-%E7%9A%84%E4%BA%8B%E4%BB%B6%E6%98%AF%E6%80%8E%E4%B9%88%E6%9D%A5%E7%9A%84"><span class="toc-number">5.</span> <span class="toc-text">epoll 的事件是怎么来的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Level-triggered-%E4%B8%8E-Edge-triggered"><span class="toc-number">6.</span> <span class="toc-text">Level-triggered 与 Edge-triggered</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E8%80%85%E7%9A%84%E5%A4%8D%E6%9D%82%E5%BA%A6%E5%AF%B9%E6%AF%94"><span class="toc-number">7.</span> <span class="toc-text">三者的复杂度对比</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#epoll-%E7%9A%84%E5%B7%A5%E7%A8%8B%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">8.</span> <span class="toc-text">epoll 的工程注意事项</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8E-Reactor-%E6%A8%A1%E5%9E%8B%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-number">9.</span> <span class="toc-text">与 Reactor 模型的关系</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">10.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">11.</span> <span class="toc-text">参考资料</span></a></li></ol></div></div><div class="post-content"><p><code>select</code>、<code>poll</code> 和 <code>epoll</code> 经常被总结成一句话：<code>select</code> 有 fd 数量限制，<code>poll</code> 没有限制，<code>epoll</code> 更高效。这句话适合面试速记，但不足以解释它们的本质差异。</p>
+<p>更准确地说，三者都解决同一个问题：一个线程如何等待多个文件描述符上的 IO 就绪事件。区别在于：</p>
+<ul>
+<li>用户态如何把“关注的 fd 集合”传给内核；</li>
+<li>内核是否需要每次重新扫描这些 fd；</li>
+<li>就绪事件如何从驱动&#x2F;协议栈回到等待线程；</li>
+<li>是否能复用内核中的关注集合；</li>
+<li>返回给用户态的是全量集合还是就绪集合。</li>
+</ul>
+<h2 id="IO-多路复用到底复用了什么"><a href="#IO-多路复用到底复用了什么" class="headerlink" title="IO 多路复用到底复用了什么"></a>IO 多路复用到底复用了什么</h2><p>阻塞 IO 的模型是：一个线程卡在一个 fd 上，直到这个 fd 可读或可写。要同时处理很多连接，朴素做法是一个连接一个线程，但线程成本和调度成本会很快变高。</p>
+<p>IO 多路复用复用的是“等待线程”。一个线程通过 <code>select/poll/epoll_wait</code> 把自己挂到多个 fd 的等待路径上。当任意一个 fd 对应的 socket、pipe、eventfd 等对象变为就绪，内核唤醒这个线程，用户态再去执行真正的 <code>read/write/accept</code>。</p>
+<p>注意：多路复用只负责“通知你可以读写”，不负责把数据从内核拷贝到用户态。真正的数据读取仍然要调用 <code>read</code>、<code>recv</code>、<code>accept</code> 等系统调用。</p>
+<p>下面这张旧图把常见的五种 IO 模型放在一起对比。它最有价值的地方，是把 IO 分成两个阶段：第一阶段是等待数据就绪，第二阶段是把数据从内核拷贝到用户空间。<code>select/poll/epoll</code> 解决的是第一阶段的等待问题；一旦返回就绪事件，第二阶段仍然是同步的 <code>recvfrom/read</code> 拷贝。</p>
+<img src="/2018/01/01/select-poll-epoll-difference/select-poll-epoll-difference-0.png" class="" title="Comparison of blocking IO, nonblocking IO, IO multiplexing, signal-driven IO, and asynchronous IO">
+
+<p>因此，IO 多路复用不是 AIO。它不会让数据自动进入用户缓冲区，也不会消灭用户态处理逻辑。它真正优化的是：一个线程不必为了每个连接各自阻塞，也不必像非阻塞 IO 那样不断主动轮询，而是把“谁就绪了”这件事交给内核等待队列和事件通知机制。</p>
+<h2 id="select：位图集合与重复扫描"><a href="#select：位图集合与重复扫描" class="headerlink" title="select：位图集合与重复扫描"></a>select：位图集合与重复扫描</h2><p><code>select</code> 的接口是：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">select</span><span class="params">(<span class="type">int</span> nfds, fd_set *readfds, fd_set *writefds,</span></span><br><span class="line"><span class="params">           fd_set *exceptfds, <span class="keyword">struct</span> timeval *timeout)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>它的特点是用 <code>fd_set</code> 位图表示关注集合。用户态把 read&#x2F;write&#x2F;except 三个位图传进内核，内核检查这些 fd 是否就绪，再把结果写回同一批位图。</p>
+<p>这带来几个问题。</p>
+<p>第一，<code>fd_set</code> 有固定尺寸约束，常见上限是 <code>FD_SETSIZE</code>。这不是内核唯一限制，但足以让 <code>select</code> 不适合作为高并发网络服务器的基础接口。</p>
+<p>第二，每次调用都要重新传入完整集合。应用层通常还要维护一份 master set，因为返回时原集合会被修改。</p>
+<p>第三，内核需要扫描从 0 到 <code>nfds - 1</code> 的描述符。即使只有一个 fd 就绪，也要检查大量未就绪 fd。复杂度可以理解为 O(n)。</p>
+<p>Linux 的 <code>fs/select.c</code> 中，<code>select</code> 最终走到 <code>do_select()</code> 这类逻辑；它围绕 fd 位图循环检查，并通过各文件对象的 poll 方法判断 mask。可以把核心过程理解成：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> each fd below nfds:</span><br><span class="line">    mask = file-&gt;f_op-&gt;poll(file, wait)</span><br><span class="line">    <span class="keyword">if</span> mask matches requested events:</span><br><span class="line">        mark fd ready</span><br></pre></td></tr></table></figure>
+
+<p>上面是简化伪代码，不是完整内核源码。关键点是：<code>select</code> 的关注集合不常驻内核，每次等待都要重新扫描。</p>
+<h2 id="poll：数组取代位图，但仍然线性扫描"><a href="#poll：数组取代位图，但仍然线性扫描" class="headerlink" title="poll：数组取代位图，但仍然线性扫描"></a>poll：数组取代位图，但仍然线性扫描</h2><p><code>poll</code> 的接口是：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">poll</span><span class="params">(<span class="keyword">struct</span> pollfd *fds, <span class="type">nfds_t</span> nfds, <span class="type">int</span> timeout)</span>;</span><br></pre></td></tr></table></figure>
+
+<p><code>pollfd</code> 大致包含三个字段：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> &#123;</span></span><br><span class="line">    <span class="type">int</span>   fd;</span><br><span class="line">    <span class="type">short</span> events;</span><br><span class="line">    <span class="type">short</span> revents;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>和 <code>select</code> 相比，<code>poll</code> 不再使用固定大小的 fd 位图，而是使用数组，所以它没有 <code>FD_SETSIZE</code> 那种位图上限问题。用户态可以传入任意长度的 <code>pollfd</code> 数组，实际受进程 fd 限制和内存限制影响。</p>
+<p>但是 <code>poll</code> 没有改变最核心的问题：每次调用仍然要把整个数组传入内核，内核仍然要扫描整个数组，并把结果写到 <code>revents</code>。</p>
+<p>因此 <code>poll</code> 可以看作是 <code>select</code> 的接口改良版，而不是复杂度革命。它更适合 fd 数量中等、接口表达更清晰的场景，但面对大量长连接且大多数连接不活跃的场景，仍然会浪费扫描成本。</p>
+<h2 id="epoll：把关注集合留在内核"><a href="#epoll：把关注集合留在内核" class="headerlink" title="epoll：把关注集合留在内核"></a>epoll：把关注集合留在内核</h2><p><code>epoll</code> 的接口被拆成三类：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">epoll_create1</span><span class="params">(<span class="type">int</span> flags)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">epoll_ctl</span><span class="params">(<span class="type">int</span> epfd, <span class="type">int</span> op, <span class="type">int</span> fd, <span class="keyword">struct</span> epoll_event *event)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">epoll_wait</span><span class="params">(<span class="type">int</span> epfd, <span class="keyword">struct</span> epoll_event *events,</span></span><br><span class="line"><span class="params">               <span class="type">int</span> maxevents, <span class="type">int</span> timeout)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这种拆分就是它和 <code>select/poll</code> 的根本区别。</p>
+<ul>
+<li><code>epoll_create1</code> 创建一个 epoll 实例。</li>
+<li><code>epoll_ctl</code> 增删改关注的 fd。</li>
+<li><code>epoll_wait</code> 只等待已经注册过的 fd 产生事件。</li>
+</ul>
+<p>也就是说，关注集合不再每次从用户态传进来，而是常驻在内核的 epoll 实例中。应用只在连接建立、关闭或关注事件变化时调用 <code>epoll_ctl</code>。</p>
+<p>Linux <code>fs/eventpoll.c</code> 里，epoll 实例的核心结构可以从两个成员看出来：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rb_root_cached</span> <span class="title">rbr</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">rdllist</span>;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>rbr</code> 用于组织被监控的 fd，<code>rdllist</code> 用于保存已经就绪的事件。这个设计解释了 epoll 的两个优势：</p>
+<p>第一，注册集合可复用。大量 fd 不需要每次 <code>epoll_wait</code> 都重新传入。</p>
+<p>第二，返回的是就绪事件。<code>epoll_wait</code> 不需要把所有 fd 都返回给用户态，而是把 ready list 中的事件拷贝出去。</p>
+<h2 id="epoll-的事件是怎么来的"><a href="#epoll-的事件是怎么来的" class="headerlink" title="epoll 的事件是怎么来的"></a>epoll 的事件是怎么来的</h2><p>理解 epoll 的关键是等待队列回调。</p>
+<p>当你把一个 socket 加入 epoll 时，内核会通过该文件对象的 <code>poll</code> 方法，把 epoll 的回调挂到目标对象的等待队列上。之后网络包到达、socket 状态变化、pipe 被写入等事件发生时，对应对象会唤醒等待队列。epoll 的回调被执行，把对应事件加入 ready list，并唤醒正在 <code>epoll_wait</code> 的线程。</p>
+<p>简化流程如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">epoll_ctl(ADD)</span><br><span class="line">  -&gt; 注册 fd</span><br><span class="line">  -&gt; 安装 poll wait callback</span><br><span class="line"></span><br><span class="line">数据到达 socket</span><br><span class="line">  -&gt; socket wait queue 被唤醒</span><br><span class="line">  -&gt; epoll callback 触发</span><br><span class="line">  -&gt; event 进入 rdllist</span><br><span class="line">  -&gt; epoll_wait 返回</span><br></pre></td></tr></table></figure>
+
+<p>这也是为什么 epoll 对“大量连接、少量活跃”的场景特别友好。它不需要每次扫描所有连接，而是在事件发生时把活跃 fd 放入就绪链表。</p>
+<h2 id="Level-triggered-与-Edge-triggered"><a href="#Level-triggered-与-Edge-triggered" class="headerlink" title="Level-triggered 与 Edge-triggered"></a>Level-triggered 与 Edge-triggered</h2><p>epoll 支持两种常见触发模式。</p>
+<p>Level-triggered，简称 LT。只要 fd 仍然处于就绪状态，<code>epoll_wait</code> 就会反复返回这个事件。它和 <code>poll</code> 的语义更接近，使用更简单。</p>
+<p>Edge-triggered，简称 ET。只有状态从“不就绪”变成“就绪”时才通知一次。它减少重复通知，但要求用户态一次性把数据读到 <code>EAGAIN</code>，否则可能因为没有新的边沿变化而饿死。</p>
+<p>ET 模式通常要搭配非阻塞 fd：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    n = read(fd, buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    <span class="keyword">if</span> (n &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        handle(buf, n);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (n == <span class="number">-1</span> &amp;&amp; errno == EAGAIN) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        close(fd);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果没有读到 <code>EAGAIN</code> 就退出，buffer 里可能还有数据，但由于没有新的边沿触发，应用可能再也收不到通知。</p>
+<h2 id="三者的复杂度对比"><a href="#三者的复杂度对比" class="headerlink" title="三者的复杂度对比"></a>三者的复杂度对比</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>select</th>
+<th>poll</th>
+<th>epoll</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>关注集合传递</td>
+<td>每次传 fd_set</td>
+<td>每次传 pollfd 数组</td>
+<td>通过 epoll_ctl 注册</td>
+</tr>
+<tr>
+<td>fd 数量限制</td>
+<td>受 fd_set 限制明显</td>
+<td>受 fd&#x2F;内存限制</td>
+<td>受 fd&#x2F;内存限制</td>
+</tr>
+<tr>
+<td>内核扫描</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>主要处理就绪事件</td>
+</tr>
+<tr>
+<td>返回结果</td>
+<td>修改原 fd_set</td>
+<td>写 revents</td>
+<td>返回 ready events</td>
+</tr>
+<tr>
+<td>适合场景</td>
+<td>少量 fd、兼容性</td>
+<td>中等 fd、接口简单</td>
+<td>大量连接、事件稀疏</td>
+</tr>
+<tr>
+<td>使用复杂度</td>
+<td>中</td>
+<td>中</td>
+<td>较高</td>
+</tr>
+</tbody></table>
+<p>需要避免一个误解：epoll 不是所有场景都更快。如果 fd 数量很少，或者所有 fd 几乎总是活跃，<code>select/poll</code> 的扫描成本并不一定是瓶颈。epoll 的优势主要来自“避免反复提交关注集合”和“只返回就绪事件”。</p>
+<h2 id="epoll-的工程注意事项"><a href="#epoll-的工程注意事项" class="headerlink" title="epoll 的工程注意事项"></a>epoll 的工程注意事项</h2><p>第一，ET 模式必须使用非阻塞 IO，并读写到 <code>EAGAIN</code>。</p>
+<p>第二，要正确处理半关闭、错误和 hangup。不要只监听 <code>EPOLLIN</code>，忽略 <code>EPOLLERR</code>、<code>EPOLLHUP</code>、<code>EPOLLRDHUP</code>。</p>
+<p>第三，<code>epoll_ctl</code> 不是免费的。连接频繁增删时，注册成本也会变成开销。</p>
+<p>第四，事件循环里不要做长时间 CPU 计算。否则即使 IO 通知很高效，也会被用户态处理逻辑拖垮。</p>
+<p>第五，one-shot 场景可以考虑 <code>EPOLLONESHOT</code>，避免多个 worker 同时处理同一个 fd，但要记得处理完后重新 arm。</p>
+<p>第六，accept 新连接时也要循环 accept 到 <code>EAGAIN</code>，否则在 ET 模式下可能漏掉已排队连接。</p>
+<h2 id="与-Reactor-模型的关系"><a href="#与-Reactor-模型的关系" class="headerlink" title="与 Reactor 模型的关系"></a>与 Reactor 模型的关系</h2><p>高性能网络框架通常把 epoll 封装成 Reactor：</p>
+<ol>
+<li>event loop 调用 <code>epoll_wait</code>。</li>
+<li>内核返回 ready events。</li>
+<li>event loop 分发到 accept&#x2F;read&#x2F;write handler。</li>
+<li>handler 执行业务逻辑或把任务丢给 worker。</li>
+<li>根据写缓冲状态修改关注事件。</li>
+</ol>
+<p>Redis、Nginx、Netty、libuv 等系统都可以用这个模型理解。差异在于线程模型、任务调度、内存管理和协议处理，而底层等待机制在 Linux 上通常会落到 epoll。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p><code>select</code>、<code>poll</code>、<code>epoll</code> 的本质区别不是“新旧 API”，而是“关注集合和就绪集合的管理方式”。</p>
+<ul>
+<li><code>select</code> 用位图，每次传入，每次扫描。</li>
+<li><code>poll</code> 用数组，突破位图限制，但仍然每次扫描。</li>
+<li><code>epoll</code> 把关注集合留在内核，用就绪链表返回活跃事件。</li>
+</ul>
+<p>如果只记一个结论：<code>select/poll</code> 是“我每次把全部 fd 给你，你帮我看看谁好了”；<code>epoll</code> 是“我先告诉你我要关注谁，之后谁好了你再通知我”。</p>
+<p>这就是 epoll 能支撑大规模长连接服务的根本原因。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>[1] <a href="https://github.com/torvalds/linux/blob/master/fs/select.c">Linux kernel source: fs&#x2F;select.c</a></p>
+<p>[2] <a href="https://github.com/torvalds/linux/blob/master/fs/eventpoll.c">Linux kernel source: fs&#x2F;eventpoll.c</a></p>
+<p>[3] <a href="https://man7.org/linux/man-pages/man2/select.2.html">Linux man-pages: select(2)</a></p>
+<p>[4] <a href="https://man7.org/linux/man-pages/man2/poll.2.html">Linux man-pages: poll(2)</a></p>
+<p>[5] <a href="https://man7.org/linux/man-pages/man7/epoll.7.html">Linux man-pages: epoll(7)</a></p>
+</div><div class="tags"><a class="article-tag" href="/zh/tags/operation-system/" title="operation-system">operation-system</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2018/01/01/select-poll-epoll-difference-en/">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</a><a class="next" href="/2016/10/01/%E5%9F%BA%E4%BA%8E%20PHP%20%E7%9A%84%20Webshell%20%E8%87%AA%E5%8A%A8%E6%A3%80%E6%B5%8B%E5%88%8D%E8%AE%AE/">基于Php的webshell自动检测刍议</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2018/01/01/select-poll-epoll-difference/',
+    url: 'https://blog.thejackstudio.com/2018/01/01/select-poll-epoll-difference/',
+    title: 'Linux IO 多路复用：select、poll、epoll 的区别与内核实现',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/zh/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/zh/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/zh/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/zh/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/zh/tags/information-safety/" style="font-size: 15px;" title="information-safety">information-safety</a><a href="/zh/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/zh/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/zh/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/zh/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/zh/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/zh/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/zh/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/zh/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox/" title="shadox：Agent-Native 的 Rootless 进程沙箱">shadox：Agent-Native 的 Rootless 进程沙箱</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024/" title="表格数据表示学习(TRL)：2024年现状与展望">表格数据表示学习(TRL)：2024年现状与展望</a></li><li><a href="/2023/04/17/availability-metrics-math/" title="深入理解可用性指标及其数学原理">深入理解可用性指标及其数学原理</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database/" title="数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别">数据库中的乐观锁与悲观锁：从库存扣减到 MVCC 与隔离级别</a></li><li><a href="/2019/08/21/large-scale-data-processing/" title="大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference/" title="Linux IO 多路复用：select、poll、epoll 的区别与内核实现">Linux IO 多路复用：select、poll、epoll 的区别与内核实现</a></li><li><a href="/2016/10/01/%E5%9F%BA%E4%BA%8E%20PHP%20%E7%9A%84%20Webshell%20%E8%87%AA%E5%8A%A8%E6%A3%80%E6%B5%8B%E5%88%8D%E8%AE%AE/" title="基于Php的webshell自动检测刍议">基于Php的webshell自动检测刍议</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

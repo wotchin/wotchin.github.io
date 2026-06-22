@@ -1,0 +1,213 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="A deeper explanation of select, poll, and epoll from system-call semantics, kernel data structures, wait queues, ready lists, and trigger modes."><meta property="og:title" content="Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences | Jack's AI Studio"><meta property="og:description" content="A deeper explanation of select, poll, and epoll from system-call semantics, kernel data structures, wait queues, ready lists, and trigger modes."><meta property="og:type" content="article"><meta property="og:url" content="https://blog.thejackstudio.com/2018/01/01/select-poll-epoll-difference-en/"><title>Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences | Jack's AI Studio</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="https://unpkg.com/normalize.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/pure-min.css"><link rel="stylesheet" type="text/css" href="https://unpkg.com/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="https://unpkg.com/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="https://unpkg.com/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"><script src="https://www.googletagmanager.com/gtag/js?id=G-E2FX2CYEJQ" async></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-E2FX2CYEJQ');
+</script><script type="text/javascript" src="https://unpkg.com/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="https://unpkg.com/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="https://unpkg.com/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</h1><a id="logo" href="/.">Jack's AI Studio</a><p class="description">AI systems, databases, and agent infrastructure insights.</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> Home</i></a><a href="/archives/"><i class="fa fa-pencil"> Writing</i></a><a href="/tags/"><i class="fa fa-tags"> Topics</i></a><a href="/projects/"><i class="fa fa-flask"> Projects</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/about/#contact"><i class="fa fa-envelope"> Contact</i></a><div class="language-switch" aria-label="Language"><a class="active" href="/2018/01/01/select-poll-epoll-difference-en/">EN</a><span>/</span><a href="/2018/01/01/select-poll-epoll-difference/">中文</a></div></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</h1><div class="post-dek">A deeper explanation of select, poll, and epoll from system-call semantics, kernel data structures, wait queues, ready lists, and trigger modes.</div><div class="post-meta"><span class="meta-item"><span class="meta-label">Published</span><span>2018-01-01</span></span><span class="meta-item"><span class="meta-label">Updated</span><span>2026-06-22</span></span><span class="meta-item"><span class="meta-label">Reading</span><span>6 min</span></span><span class="meta-item category"><span class="meta-label">Category</span><a href="/categories/English/">English</a></span></div><div class="post-language-link"><a href="/2018/01/01/select-poll-epoll-difference/">阅读中文版</a></div><a class="disqus-comment-count" data-disqus-identifier="2018/01/01/select-poll-epoll-difference-en/" href="/2018/01/01/select-poll-epoll-difference-en/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">Contents</div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Why-IO-Multiplexing-Exists"><span class="toc-number">1.</span> <span class="toc-text">Why IO Multiplexing Exists</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#The-Readiness-Model"><span class="toc-number">2.</span> <span class="toc-text">The Readiness Model</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#select"><span class="toc-number">3.</span> <span class="toc-text">select</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Kernel-Level-Behavior"><span class="toc-number">3.1.</span> <span class="toc-text">Kernel-Level Behavior</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#poll"><span class="toc-number">4.</span> <span class="toc-text">poll</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Kernel-Level-Behavior-1"><span class="toc-number">4.1.</span> <span class="toc-text">Kernel-Level Behavior</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#epoll"><span class="toc-number">5.</span> <span class="toc-text">epoll</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#What-epoll-Changes"><span class="toc-number">6.</span> <span class="toc-text">What epoll Changes</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Level-Triggered-and-Edge-Triggered-Modes"><span class="toc-number">7.</span> <span class="toc-text">Level-Triggered and Edge-Triggered Modes</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Complexity-Comparison"><span class="toc-number">8.</span> <span class="toc-text">Complexity Comparison</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Reactor-Pattern"><span class="toc-number">9.</span> <span class="toc-text">Reactor Pattern</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Practical-Notes"><span class="toc-number">10.</span> <span class="toc-text">Practical Notes</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Summary"><span class="toc-number">11.</span> <span class="toc-text">Summary</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#References"><span class="toc-number">12.</span> <span class="toc-text">References</span></a></li></ol></div></div><div class="post-content"><h1 id="Why-IO-Multiplexing-Exists"><a href="#Why-IO-Multiplexing-Exists" class="headerlink" title="Why IO Multiplexing Exists"></a>Why IO Multiplexing Exists</h1><p>Network servers spend a surprising amount of time waiting. A socket may not have data yet. A write buffer may not have space. A connection may be idle. If a server blocks one thread per connection, the design is simple, but the cost becomes high when the connection count grows.</p>
+<p>IO multiplexing solves this problem by allowing one thread to wait for events on many file descriptors.</p>
+<p>The common Linux APIs are:</p>
+<ul>
+<li><code>select</code></li>
+<li><code>poll</code></li>
+<li><code>epoll</code></li>
+</ul>
+<p>They all answer the same basic question:</p>
+<blockquote>
+<p>Among this set of file descriptors, which ones are ready for IO now?</p>
+</blockquote>
+<p>The following diagram shows where IO multiplexing sits among common Linux IO models.</p>
+<p><img src="/2018/01/01/select-poll-epoll-difference/select-poll-epoll-difference-0.png" alt="Comparison of blocking IO, nonblocking IO, IO multiplexing, signal-driven IO, and asynchronous IO"></p>
+<h1 id="The-Readiness-Model"><a href="#The-Readiness-Model" class="headerlink" title="The Readiness Model"></a>The Readiness Model</h1><p><code>select</code>, <code>poll</code>, and <code>epoll</code> are readiness-based APIs. They do not complete the IO operation for you. They only tell you that an operation is likely to proceed without blocking.</p>
+<p>For a TCP socket:</p>
+<ul>
+<li>Readable usually means data is available, the peer closed the connection, or an error is pending.</li>
+<li>Writable usually means there is space in the send buffer.</li>
+<li>Exceptional conditions usually represent out-of-band or error-related states.</li>
+</ul>
+<p>After receiving a readiness notification, the application still needs to call <code>read</code>, <code>write</code>, <code>recv</code>, or <code>send</code>.</p>
+<p>This is different from true asynchronous IO, where the kernel completes the IO and notifies the application afterward.</p>
+<h1 id="select"><a href="#select" class="headerlink" title="select"></a>select</h1><p>The <code>select</code> API is old and portable:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">select</span><span class="params">(</span></span><br><span class="line"><span class="params">    <span class="type">int</span> nfds,</span></span><br><span class="line"><span class="params">    fd_set *readfds,</span></span><br><span class="line"><span class="params">    fd_set *writefds,</span></span><br><span class="line"><span class="params">    fd_set *exceptfds,</span></span><br><span class="line"><span class="params">    <span class="keyword">struct</span> timeval *timeout</span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>The application passes three bitsets representing file descriptors of interest. The kernel modifies those sets in place and returns the number of ready descriptors.</p>
+<p>A typical loop looks like this:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">fd_set rfds;</span><br><span class="line">FD_ZERO(&amp;rfds);</span><br><span class="line">FD_SET(listen_fd, &amp;rfds);</span><br><span class="line">FD_SET(client_fd, &amp;rfds);</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> n = select(max_fd + <span class="number">1</span>, &amp;rfds, <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;timeout);</span><br><span class="line"><span class="keyword">if</span> (n &gt; <span class="number">0</span> &amp;&amp; FD_ISSET(client_fd, &amp;rfds)) &#123;</span><br><span class="line">    read(client_fd, buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Kernel-Level-Behavior"><a href="#Kernel-Level-Behavior" class="headerlink" title="Kernel-Level Behavior"></a>Kernel-Level Behavior</h2><p>Conceptually, <code>select</code> copies the descriptor sets from user space into the kernel, scans descriptors from <code>0</code> to <code>nfds - 1</code>, attaches the current task to wait queues for each descriptor, sleeps if nothing is ready, then scans again to report readiness.</p>
+<p>The important point is that the kernel must inspect the descriptor set repeatedly. The cost is proportional to the range of file descriptors, not just the number of ready descriptors.</p>
+<p>In simplified form, the logic resembles:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (fd = <span class="number">0</span>; fd &lt; nfds; fd++) &#123;</span><br><span class="line">    <span class="keyword">if</span> (fd_is_set(fd, in)) &#123;</span><br><span class="line">        mask = file-&gt;f_op-&gt;poll(file, wait);</span><br><span class="line">        <span class="keyword">if</span> (mask &amp; requested_events)</span><br><span class="line">            fd_set(fd, out);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>This explains the two classic limitations:</p>
+<ul>
+<li><code>select</code> is O(n) over the descriptor range.</li>
+<li>The descriptor set has a fixed size limit, commonly exposed through <code>FD_SETSIZE</code>.</li>
+</ul>
+<p><code>select</code> is fine for small descriptor sets and portable code. It is not ideal for high-concurrency servers.</p>
+<h1 id="poll"><a href="#poll" class="headerlink" title="poll"></a>poll</h1><p><code>poll</code> removes the fixed bitset limit and uses an array of <code>pollfd</code> structures:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> &#123;</span></span><br><span class="line">    <span class="type">int</span>   fd;</span><br><span class="line">    <span class="type">short</span> events;</span><br><span class="line">    <span class="type">short</span> revents;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">poll</span><span class="params">(<span class="keyword">struct</span> pollfd *fds, <span class="type">nfds_t</span> nfds, <span class="type">int</span> timeout)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>Each entry contains a descriptor, requested events, and returned events.</p>
+<p>Example:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> <span class="title">fds</span>[2];</span></span><br><span class="line">fds[<span class="number">0</span>].fd = listen_fd;</span><br><span class="line">fds[<span class="number">0</span>].events = POLLIN;</span><br><span class="line">fds[<span class="number">1</span>].fd = client_fd;</span><br><span class="line">fds[<span class="number">1</span>].events = POLLIN;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> n = poll(fds, <span class="number">2</span>, <span class="number">1000</span>);</span><br><span class="line"><span class="keyword">if</span> (n &gt; <span class="number">0</span> &amp;&amp; (fds[<span class="number">1</span>].revents &amp; POLLIN)) &#123;</span><br><span class="line">    read(client_fd, buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Kernel-Level-Behavior-1"><a href="#Kernel-Level-Behavior-1" class="headerlink" title="Kernel-Level Behavior"></a>Kernel-Level Behavior</h2><p><code>poll</code> is more flexible than <code>select</code>, but the basic model is similar. The kernel copies the <code>pollfd</code> array, visits every descriptor, calls each file’s <code>poll</code> method, and returns readiness through <code>revents</code>.</p>
+<p>Simplified:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; nfds; i++) &#123;</span><br><span class="line">    file = fget(fds[i].fd);</span><br><span class="line">    mask = file-&gt;f_op-&gt;poll(file, wait);</span><br><span class="line">    fds[i].revents = mask &amp; fds[i].events;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>This removes the <code>FD_SETSIZE</code> problem, but not the O(n) scan. If a process monitors 100,000 descriptors and only 10 are active, <code>poll</code> still has to walk the array.</p>
+<p><code>poll</code> is a cleaner interface than <code>select</code>, but it does not fundamentally change the scaling model.</p>
+<h1 id="epoll"><a href="#epoll" class="headerlink" title="epoll"></a>epoll</h1><p><code>epoll</code> was designed for large numbers of file descriptors.</p>
+<p>It splits the workflow into three operations:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">epoll_create1</span><span class="params">(<span class="type">int</span> flags)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">epoll_ctl</span><span class="params">(</span></span><br><span class="line"><span class="params">    <span class="type">int</span> epfd,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> op,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> fd,</span></span><br><span class="line"><span class="params">    <span class="keyword">struct</span> epoll_event *event</span></span><br><span class="line"><span class="params">)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">epoll_wait</span><span class="params">(</span></span><br><span class="line"><span class="params">    <span class="type">int</span> epfd,</span></span><br><span class="line"><span class="params">    <span class="keyword">struct</span> epoll_event *events,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> maxevents,</span></span><br><span class="line"><span class="params">    <span class="type">int</span> timeout</span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>The idea is simple:</p>
+<ol>
+<li>Create an epoll instance.</li>
+<li>Register file descriptors and their desired events.</li>
+<li>Wait for ready events.</li>
+</ol>
+<p>Example:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> epfd = epoll_create1(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">ev</span>;</span></span><br><span class="line">ev.events = EPOLLIN;</span><br><span class="line">ev.data.fd = client_fd;</span><br><span class="line">epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &amp;ev);</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">events</span>[128];</span></span><br><span class="line"><span class="type">int</span> n = epoll_wait(epfd, events, <span class="number">128</span>, <span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">    <span class="type">int</span> fd = events[i].data.fd;</span><br><span class="line">    read(fd, buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="What-epoll-Changes"><a href="#What-epoll-Changes" class="headerlink" title="What epoll Changes"></a>What epoll Changes</h1><p>The key improvement is that <code>epoll</code> separates registration from waiting.</p>
+<p>With <code>select</code> and <code>poll</code>, the application passes the whole descriptor set on every wait call. With <code>epoll</code>, descriptors are registered once through <code>epoll_ctl</code>. The kernel keeps an interest list inside the epoll instance.</p>
+<p>Internally, epoll maintains two important structures:</p>
+<ul>
+<li>An interest set, which records descriptors being watched.</li>
+<li>A ready list, which records descriptors that have become ready.</li>
+</ul>
+<p>When a watched file descriptor becomes ready, its wait-queue callback can add the corresponding epoll item to the ready list. Then <code>epoll_wait</code> can return ready descriptors without scanning the entire interest set.</p>
+<p>In simplified form:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Registration path</span></span><br><span class="line">epoll_ctl(epfd, EPOLL_CTL_ADD, fd, event);</span><br><span class="line">add fd to epoll interest tree;</span><br><span class="line">attach callback to fd wait <span class="built_in">queue</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Wakeup path</span></span><br><span class="line">when fd becomes ready:</span><br><span class="line">    callback adds fd to epoll ready <span class="built_in">list</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Wait path</span></span><br><span class="line">epoll_wait(epfd, events, maxevents, timeout);</span><br><span class="line">copy ready events to user space;</span><br></pre></td></tr></table></figure>
+
+<p>This is why <code>epoll_wait</code> scales with the number of ready descriptors rather than the total number of watched descriptors in the common case.</p>
+<h1 id="Level-Triggered-and-Edge-Triggered-Modes"><a href="#Level-Triggered-and-Edge-Triggered-Modes" class="headerlink" title="Level-Triggered and Edge-Triggered Modes"></a>Level-Triggered and Edge-Triggered Modes</h1><p><code>epoll</code> supports two main notification modes.</p>
+<p>Level-triggered mode is the default. If a descriptor remains readable or writable, <code>epoll_wait</code> may keep reporting it.</p>
+<p>This is easier to use:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ev.events = EPOLLIN;</span><br></pre></td></tr></table></figure>
+
+<p>If the application reads only part of the available data, the descriptor will still be reported later.</p>
+<p>Edge-triggered mode reports only when the state changes from not ready to ready:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ev.events = EPOLLIN | EPOLLET;</span><br></pre></td></tr></table></figure>
+
+<p>This can reduce repeated notifications, but it requires stricter application logic. The descriptor should be non-blocking, and the application should read or write until <code>EAGAIN</code>.</p>
+<p>Typical pattern:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    <span class="type">ssize_t</span> n = read(fd, buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    <span class="keyword">if</span> (n &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        handle(buf, n);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (n == <span class="number">-1</span> &amp;&amp; errno == EAGAIN) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        close(fd);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>If you use edge-triggered mode but do not drain the descriptor, you may miss future notifications and stall the connection.</p>
+<h1 id="Complexity-Comparison"><a href="#Complexity-Comparison" class="headerlink" title="Complexity Comparison"></a>Complexity Comparison</h1><table>
+<thead>
+<tr>
+<th>API</th>
+<th>Descriptor registration</th>
+<th>Wait cost</th>
+<th>User-kernel copy</th>
+<th>Descriptor limit</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>select</code></td>
+<td>Passed on every call</td>
+<td>O(n) scan</td>
+<td>Bitsets copied every call</td>
+<td>Limited by <code>FD_SETSIZE</code></td>
+<td>Small portable programs</td>
+</tr>
+<tr>
+<td><code>poll</code></td>
+<td>Passed on every call</td>
+<td>O(n) scan</td>
+<td>Array copied every call</td>
+<td>No fixed bitset limit</td>
+<td>Medium descriptor sets</td>
+</tr>
+<tr>
+<td><code>epoll</code></td>
+<td>Registered once</td>
+<td>Usually O(ready)</td>
+<td>Ready events copied</td>
+<td>Scales to large sets</td>
+<td>High-concurrency Linux servers</td>
+</tr>
+</tbody></table>
+<p>This table is a simplification, but it captures the most important engineering difference.</p>
+<h1 id="Reactor-Pattern"><a href="#Reactor-Pattern" class="headerlink" title="Reactor Pattern"></a>Reactor Pattern</h1><p>IO multiplexing is often used with the Reactor pattern.</p>
+<p>The event loop waits for readiness events, then dispatches handlers:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (running) &#123;</span><br><span class="line">    <span class="type">int</span> n = epoll_wait(epfd, events, maxevents, timeout);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">        dispatch(events[i]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Many high-performance network systems follow this model: Nginx, Redis, Netty, libuv, and many custom RPC frameworks.</p>
+<p>The model works well because it keeps a small number of threads busy with many connections. It also makes backpressure and connection state explicit in the application.</p>
+<h1 id="Practical-Notes"><a href="#Practical-Notes" class="headerlink" title="Practical Notes"></a>Practical Notes</h1><p>First, readiness does not guarantee a full operation will succeed. Always use non-blocking descriptors in event-driven servers, and handle <code>EAGAIN</code>.</p>
+<p>Second, writable events are often always ready. If you subscribe to write readiness for every socket all the time, the event loop may spin. Register write events only when there is pending data to send.</p>
+<p>Third, handle close and error events. A readable socket may mean the peer closed the connection. <code>EPOLLERR</code> and <code>EPOLLHUP</code> should not be ignored.</p>
+<p>Fourth, avoid long-running work inside the event loop. CPU-heavy tasks should be moved to worker threads or separate processes.</p>
+<p>Fifth, be careful with edge-triggered mode. It can improve efficiency, but level-triggered mode is often safer and good enough.</p>
+<h1 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h1><p><code>select</code>, <code>poll</code>, and <code>epoll</code> solve the same problem: waiting for IO readiness across multiple file descriptors.</p>
+<p><code>select</code> is portable but limited by fixed-size descriptor sets and O(n) scans. <code>poll</code> removes the fixed bitset limit but still scans all descriptors. <code>epoll</code> changes the model by keeping an interest list in the kernel and returning descriptors from a ready list.</p>
+<p>The practical result is clear: for small programs, <code>select</code> or <code>poll</code> may be sufficient. For high-concurrency Linux servers, <code>epoll</code> is usually the right primitive.</p>
+<p>The deeper lesson is that performance comes from avoiding repeated work. <code>epoll</code> is faster not because it magically makes IO cheaper, but because it avoids rebuilding and rescanning the whole descriptor set on every wait.</p>
+<h1 id="References"><a href="#References" class="headerlink" title="References"></a>References</h1><p>[1]. Linux manual page: select(2)</p>
+<p>[2]. Linux manual page: poll(2)</p>
+<p>[3]. Linux manual page: epoll(7)</p>
+</div><div class="tags"><a class="article-tag" href="/tags/operation-system/" title="operation-system">operation-system</a></div><div class="post-contact-cta"><strong>Work with Jack's AI Studio</strong><p>For architecture reviews, AI/data infrastructure consulting, or technical research translation, reach out by email.</p><a href="/about/#contact">Contact</a></div><div class="post-nav"><a class="pre" href="/2019/08/21/large-scale-data-processing/">大规模数据处理系统：从 MapReduce 到湖仓、流式与 HTAP</a><a class="next" href="/2018/01/01/select-poll-epoll-difference/">Linux IO 多路复用：select、poll、epoll 的区别与内核实现</a></div><link rel="stylesheet" type="text/css" href="https://unpkg.com/disqusjs@1.3/dist/disqusjs.css"><script type="text/javascript" src="https://unpkg.com/disqusjs@1.3/dist/disqus.js"></script><script type="text/javascript" id="disqus-count-script">$(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '//disqus.com/next/config.json', true);
+  xhr.timeout = 2500;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      $('.post-meta .post-comments-count').show();
+      var s = document.createElement('script');
+      s.id = 'dsq-count-scr';
+      s.src = 'https://wotchin.disqus.com/count.js';
+      s.async = true;
+      (document.head || document.body).appendChild(s);
+    }
+  };
+  xhr.ontimeout = function () { xhr.abort(); };
+  xhr.send(null);
+});</script><div class="comments" id="disqus_thread"><script type="text/javascript">// Load comments with DisqusJS
+function loadComments() {
+  window.dsqjs = new DisqusJS({
+    shortname: 'wotchin',
+    siteName: 'Jack\'s AI Studio',
+    identifier: '2018/01/01/select-poll-epoll-difference-en/',
+    url: 'https://blog.thejackstudio.com/2018/01/01/select-poll-epoll-difference-en/',
+    title: 'Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences',
+    api: 'https://disqus.skk.moe/disqus/',
+    apikey: '1q6QdODdaj0sGjHgFPUSMTJXodfaDVGNw1dC2mMCZoXz5GxET4GIfaagUMAxJkeV',
+    admin: '',
+    adminLabel: ''
+  });
+}
+// Lazy load {# Credit: https://github.com/theme-next/hexo-theme-next/blob/master/layout/_third-party/comments/disqus.swig #}
+(function () {
+  var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+  if (offsetTop <= 0) {
+    // Load directly when there's no scrollbar
+    window.addEventListener('load', loadComments, false);
+  } else {
+    var disqusScroll = function () {
+      // offsetTop may changes because of manually resizing browser window or lazy loading images
+      var offsetTop = document.getElementById('disqus_thread').offsetTop - window.innerHeight;
+      var scrollTop = window.scrollY;
+
+      // Pre-load comments a bit? (margin or anything else)
+      if (offsetTop - scrollTop < 60) {
+        window.removeEventListener('scroll', disqusScroll);
+        loadComments();
+      }
+    };
+    window.addEventListener('scroll', disqusScroll);
+  }
+})();
+// Scroll to comments automatically if #comment-xxx anchor specified
+window.addEventListener('load', function () {
+  // I don't know why, it just works.
+  window.setTimeout(function () {
+    if (location.hash.indexOf('#comment-') !== -1) {
+      document.getElementById('disqus_thread').scrollIntoView(true);
+    }
+  }, 100);
+}, false);
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://blog.thejackstudio.com"/></form></div><div class="widget"><div class="author-info"><a class="info-avatar" href="/about/" title="About"><img class="nofancybox" src="/img/avatar.png"/></a><p>AI systems, databases, and infrastructure engineering.</p><a class="info-icon" href="https://x.com/wotchin_real" title="X" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:jack@thejackstudio.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/wotchin" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> Tags</i></div><div class="tagcloud"><a href="/tags/database/" style="font-size: 15px;" title="database">database</a><a href="/tags/observability/" style="font-size: 15px;" title="observability">observability</a><a href="/tags/accelerator/" style="font-size: 15px;" title="accelerator">accelerator</a><a href="/tags/agent/" style="font-size: 15px;" title="agent">agent</a><a href="/tags/big-data/" style="font-size: 15px;" title="big-data">big-data</a><a href="/tags/emerging-hardware/" style="font-size: 15px;" title="emerging-hardware">emerging-hardware</a><a href="/tags/gpu/" style="font-size: 15px;" title="gpu">gpu</a><a href="/tags/linux/" style="font-size: 15px;" title="linux">linux</a><a href="/tags/operation-system/" style="font-size: 15px;" title="operation-system">operation-system</a><a href="/tags/reliability/" style="font-size: 15px;" title="reliability">reliability</a><a href="/tags/rust/" style="font-size: 15px;" title="rust">rust</a><a href="/tags/sandbox/" style="font-size: 15px;" title="sandbox">sandbox</a><a href="/tags/software-engineering/" style="font-size: 15px;" title="software-engineering">software-engineering</a><a href="/tags/sre/" style="font-size: 15px;" title="sre">sre</a><a href="/tags/tabular-representation-learning/" style="font-size: 15px;" title="tabular-representation-learning">tabular-representation-learning</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> Recent</i></div><ul><li><a href="/2026/06/22/shadox-agent-native-rootless-sandbox-en/" title="shadox: An Agent-Native Rootless Process Sandbox">shadox: An Agent-Native Rootless Process Sandbox</a></li><li><a href="/2025/03/31/gpu-database/" title="Driving Database Innovation with GPU Acceleration">Driving Database Innovation with GPU Acceleration</a></li><li><a href="/2024/12/30/tabular-representation-learning-2024-en/" title="Tabular Representation Learning (TRL): 2024 Review and Outlook">Tabular Representation Learning (TRL): 2024 Review and Outlook</a></li><li><a href="/2023/04/17/availability-metrics-math-en/" title="Understanding Availability Metrics and Their Mathematical Foundations">Understanding Availability Metrics and Their Mathematical Foundations</a></li><li><a href="/2020/02/10/optimistic-pessimistic-lock-in-database-en/" title="Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels">Optimistic and Pessimistic Locking in Databases: From Inventory Deduction to MVCC and Isolation Levels</a></li><li><a href="/2019/08/21/large-scale-data-processing-en/" title="Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP">Large-Scale Data Processing Systems: From MapReduce to Lakehouse, Streaming, and HTAP</a></li><li><a href="/2018/01/01/select-poll-epoll-difference-en/" title="Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences">Linux IO Multiplexing: select, poll, epoll, and Their Kernel-Level Differences</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> Links</i></div><ul></ul><a href="https://blog.csdn.net/wang7807564" title="Archived CSDN Blog" target="_blank">Archived CSDN Blog</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">Jack's AI Studio.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="https://unpkg.com/@fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="Copied!"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>
