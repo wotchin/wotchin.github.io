@@ -1,10 +1,8 @@
 @charset "UTF-8";
 /**
- *
- * @package Maupassant
- * @author cho
- * @version 2.0
- * @link http://chopstack.com
+ * Jack's AI Studio — custom Hexo theme
+ * @author wotchin
+ * @link https://github.com/wotchin
  */
 /*
 pure css setting
@@ -1547,17 +1545,10 @@ figure.highlight .line,
   color: #222;
 }
 
-/* toc*/
+/* toc — collapsible floating panel (see premium polish section for visual design) */
 .toc-article {
-  border: 1px solid #bbb;
-  border-radius: 7px;
   margin: 1.1em 0 0 2em;
-  padding: 0.7em 0.7em 0 0.7em;
   max-width: 40%;
-}
-
-.toc-title {
-  font-size: 120%;
 }
 
 #toc {
@@ -2304,12 +2295,6 @@ body {
   background: #fff;
 }
 
-.toc-title {
-  color: #1f2933;
-  font-size: 14px;
-  font-weight: 700;
-}
-
 #sidebar {
   border-left-color: #e4e8eb;
 }
@@ -2337,5 +2322,383 @@ body {
   }
   .home-intro-main h1 {
     font-size: 28px;
+  }
+}
+/* ============================================================
+   Premium polish — minimal, elegant, high-end reading experience
+   ============================================================ */
+:root {
+  --jas-ink: #1a2330;
+  --jas-body: #333c46;
+  --jas-muted: #55606c;
+  --jas-faint: #8a94a0;
+  --jas-accent: #0b5cad;
+  --jas-accent-soft: #eef4fb;
+  --jas-line: #e6eaef;
+  --jas-bg: #fcfcfb;
+  --jas-card: #ffffff;
+}
+
+body {
+  background: var(--jas-bg);
+  color: var(--jas-body);
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+::selection {
+  background: rgba(11, 92, 173, 0.16);
+}
+
+/* ---------- Header: slim, sticky, unobtrusive ---------- */
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0;
+  border-bottom: 1px solid transparent;
+  background: rgba(252, 252, 251, 0.86);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+#header .header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 64px;
+  padding: 10px 0;
+}
+#header .site-name {
+  margin-bottom: 0;
+  min-width: 0;
+  flex-shrink: 0;
+}
+#header .site-name #logo {
+  font: 600 20px/1.25 "Helvetica Neue", Arial, "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  color: var(--jas-ink);
+}
+#header .site-name #logo span, #header .site-name #logo:hover {
+  color: var(--jas-accent);
+}
+#header .site-name .description {
+  margin: 2px 0 0;
+  max-width: 420px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--jas-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#header #nav-menu {
+  position: static;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+#header #nav-menu a {
+  position: relative;
+  padding: 6px 12px;
+  line-height: 1.4;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--jas-muted);
+  border: none;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+#header #nav-menu a i.fa {
+  margin-right: 5px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+#header #nav-menu a:hover {
+  color: var(--jas-accent);
+  background: rgba(26, 35, 48, 0.05);
+}
+#header #nav-menu a.current {
+  color: var(--jas-accent);
+  background: var(--jas-accent-soft);
+  border: none;
+}
+#header #nav-menu .language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 10px;
+  padding: 2px;
+  font-size: 12px;
+  color: var(--jas-faint);
+  border: 1px solid var(--jas-line);
+  border-radius: 999px;
+  background: var(--jas-card);
+}
+#header #nav-menu .language-switch a {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--jas-muted);
+  border-radius: 999px;
+}
+#header #nav-menu .language-switch a.active {
+  color: #fff;
+  background: var(--jas-ink);
+}
+#header #nav-menu .language-switch a:hover:not(.active) {
+  color: var(--jas-ink);
+  background: transparent;
+}
+#header #nav-menu .language-switch span {
+  display: none;
+}
+
+/* Scrolled state: subtle separation from content */
+#header.is-scrolled {
+  border-bottom-color: var(--jas-line);
+  box-shadow: 0 1px 12px rgba(26, 35, 48, 0.05);
+}
+
+/* ---------- Reading column ---------- */
+.content_container {
+  padding-top: 34px;
+}
+
+.post {
+  padding-top: 10px;
+}
+.post .post-title {
+  font: 700 30px/1.25 "ff-tisa-web-pro", Cambria, "Times New Roman", Georgia, "Songti SC", "SimSun", serif;
+  letter-spacing: -0.01em;
+  color: var(--jas-ink);
+}
+.post .post-dek {
+  font-size: 16.5px;
+  color: var(--jas-muted);
+}
+.post .post-meta {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--jas-line);
+  font-size: 13px;
+}
+.post .post-meta .meta-label {
+  letter-spacing: 0.08em;
+}
+.post .post-content {
+  font-size: 16px;
+  line-height: 1.85;
+}
+.post .post-content h2 {
+  font-size: 23px;
+  letter-spacing: -0.01em;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.post .post-content h2::after {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: var(--jas-accent);
+  opacity: 0.85;
+}
+.post .post-content h3 {
+  font-size: 18.5px;
+}
+.post .post-content a {
+  color: var(--jas-accent);
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  transition: background-size 0.2s ease;
+}
+.post .post-content a:hover {
+  background-size: 100% 1px;
+  text-decoration: none;
+}
+.post .post-content p a,
+.post .post-content li a {
+  color: var(--jas-accent);
+  padding-bottom: 0;
+}
+.post .post-content blockquote {
+  border-left: 3px solid var(--jas-accent);
+  background: var(--jas-accent-soft);
+  border-radius: 0 8px 8px 0;
+}
+.post .post-content img {
+  border-radius: 8px;
+}
+.post .post-content table {
+  font-size: 14.5px;
+  border: 1px solid var(--jas-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.post .post-content table th {
+  background: #f5f7f9;
+  border-bottom: 1px solid var(--jas-line);
+}
+.post .post-content table td {
+  border-bottom: 1px solid #f0f3f5;
+}
+
+/* ---------- TOC: collapsed pill → floating panel ---------- */
+.toc-article {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 300px;
+}
+
+.toc-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--jas-muted);
+  background: var(--jas-card);
+  border: 1px solid var(--jas-line);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(26, 35, 48, 0.06);
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.toc-toggle i.fa {
+  font-size: 12px;
+}
+.toc-toggle:hover {
+  color: var(--jas-accent);
+  border-color: #c3d4e6;
+  box-shadow: 0 2px 10px rgba(26, 35, 48, 0.1);
+}
+
+.toc-body {
+  margin-top: 10px;
+  padding: 12px 16px 12px 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+  font-size: 13px;
+  background: var(--jas-card);
+  border: 1px solid var(--jas-line);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(26, 35, 48, 0.09);
+}
+.toc-body .toc {
+  margin: 0;
+  line-height: 1.7;
+}
+.toc-body .toc a {
+  color: var(--jas-muted);
+}
+.toc-body .toc a:hover {
+  color: var(--jas-accent);
+}
+
+.toc-article.is-collapsed .toc-body {
+  display: none;
+}
+
+/* On wide screens, float the TOC panel so it never breaks the text flow */
+@media screen and (min-width: 48em) {
+  .toc-article {
+    float: right;
+    margin: 0.4em 0 1em 2em;
+  }
+  .toc-body {
+    position: absolute;
+    right: 0;
+    width: 280px;
+    z-index: 40;
+  }
+}
+@media print, screen and (max-width: 48em) {
+  .toc-article {
+    max-width: 100%;
+  }
+  .toc-body {
+    position: static;
+    width: auto;
+  }
+}
+/* ---------- Sidebar ---------- */
+#sidebar {
+  border-left: none;
+  padding-left: 40px;
+  word-wrap: break-word;
+}
+#sidebar .widget {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 16px 18px;
+  border: 1px solid var(--jas-line);
+  border-radius: 10px;
+  background: var(--jas-card);
+}
+#sidebar .widget .author-info {
+  max-width: 220px;
+  margin: 0 auto;
+  font-size: 13.5px;
+  line-height: 1.6;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: none;
+}
+#sidebar .widget .widget-title,
+#sidebar .widget .comments-title {
+  border-bottom: none;
+  padding-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jas-faint);
+}
+
+/* ---------- Footer ---------- */
+#footer {
+  margin-top: 3em;
+  padding-top: 1.6em;
+  border-top: 1px solid var(--jas-line);
+  font-size: 13px;
+  color: var(--jas-faint);
+}
+
+/* ---------- Mobile header ---------- */
+@media print, screen and (max-width: 64em) {
+  #header .header-inner {
+    flex-wrap: wrap;
+  }
+}
+@media print, screen and (max-width: 48em) {
+  #header .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 0;
+  }
+  #header .site-name .description {
+    white-space: normal;
+  }
+  #header #nav-menu {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 2px;
+  }
+  #header #nav-menu a {
+    padding: 5px 10px;
   }
 }
