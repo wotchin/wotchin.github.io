@@ -10,11 +10,11 @@ gtag('config', 'G-E2FX2CYEJQ');
 <h2 id="一、新名词不等于新问题"><a href="#一、新名词不等于新问题" class="headerlink" title="一、新名词不等于新问题"></a>一、新名词不等于新问题</h2><p>Memory 是今天 Agent 领域最典型的例子。</p>
 <p>Long-term Memory、Episodic Memory、Semantic Memory、Working Memory、User Memory、Shared Memory……围绕 Memory 的新分类越来越多，相应地又出现了 Memory Database、Memory Service、Memory Framework 等一系列系统。</p>
 <p>但是，如果把这些系统一层一层剥开，<strong>相当一部分当前 Agent Memory 的存储与召回层</strong>仍然可以抽象成：</p>
-<p>[<br>Memory &#x3D; Extract + Store + Index + Retrieve + Rank + Inject<br>]</p>
+<p>$$<br>Memory &#x3D; Extract + Store + Index + Retrieve + Rank + Inject<br>$$</p>
 <p>一段历史交互经过信息抽取，被保存到某种存储中，再通过关键词、向量或者混合索引召回，经过排序以后重新放回上下文。</p>
 <p>如果把“Agent”这个名字暂时拿掉，会发现其中的大多数问题都非常熟悉。BM25 是传统信息检索技术，Embedding 对应向量检索，Hybrid Search 是稀疏检索与稠密检索结合，Rerank 是搜索排序问题，Cache、TTL、Partition、Replication、Compression 也都是已经研究多年的系统机制。</p>
 <p>简单一点的个人 Agent，<code>markdown + grep</code> 可能已经能够满足需求；复杂一点，可以变成：</p>
-<p>[<br>BM25 + Embedding + Metadata\ Filter + Reranker<br>]</p>
+<p>$$<br>BM25 + Embedding + Metadata\ Filter + Reranker<br>$$</p>
 <p>它们实现方式不同，效果不同，性能不同，但解决的核心问题仍然是同一个：</p>
 <p><strong>如何从过去的信息中，找到现在需要的信息。– 这就是信息检索。</strong></p>
 <p>当然，这里讨论的是 Memory 中“保存和召回历史信息”这一层，而不是把所有 Agent Memory 都等价成信息检索。恰恰相反，当问题继续发展到记忆反思、经验抽象和行为改变时，它已经开始超出传统检索的边界。2026 年 ACL Findings 的综述《From Storage to Experience》就把 Agent Memory 的发展划分为 Storage、Reflection 和 Experience 三个阶段：保存 trajectory 只是第一层，继续向前的问题已经变成如何反思、整合和抽象过去的经验。[2]</p>
@@ -26,20 +26,20 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p><strong>什么东西根本不应该被存下来？</strong></p>
 <p>这就不是换了一把更锋利的刀。</p>
 <p>这是换了一道题。</p>
-
+<img src="/2026/08/07/agent-era-database-rethinking-2026/p1.png" class="" title="两条发展路径对比">
 
 <p>Trace Database 也是类似的情况。Agent 会产生大量 prompt、response、span、tool call、tool result、latency、evaluation result，这构成了一个新的工作负载，但新的工作负载不自动等于新的系统问题。</p>
 <p>LangChain 的 SmithDB 是一个很好的例子。它针对 LangSmith 的 Agent Trace 工作负载进行了专门设计，使用对象存储保存大量持久化数据，用关系数据库保存 segment metadata，并设计相应的 ingestion、query、compaction 和索引机制。它需要面对长时间 span 持续更新、TTL、最新数据查询、全文检索、去重等现实问题，因此绝不能简单地把它说成“一个 append-only log”。LangChain 自己也明确把 SmithDB 描述为一个 object-storage-backed LSM，并强调它是针对 Agent observability workload 做的深度定制。[3]</p>
 <p>但是从技术谱系上看，它大量使用的仍然是已经存在多年的数据库思想：LSM-tree、segment、compaction、inverted index、object storage、metadata management。</p>
 <p>所以这里应该明确区分：</p>
-<p>[<br>旧机制 + 新工作负载 \rightarrow 更好的系统<br>]</p>
+<p>$$<br>旧机制 + 新工作负载 \rightarrow 更好的系统<br>$$</p>
 <p>和：</p>
-<p>[<br>新问题 \rightarrow 新抽象 \rightarrow 新机制<br>]</p>
+<p>$$<br>新问题 \rightarrow 新抽象 \rightarrow 新机制<br>$$</p>
 <p>前者当然重要，而且是数据库工程最擅长的事情。但它和后者并不是一回事。</p>
 <h2 id="二、问题还需要再往下挖"><a href="#二、问题还需要再往下挖" class="headerlink" title="二、问题还需要再往下挖"></a>二、问题还需要再往下挖</h2><p>现在数据库社区一个很典型的思维路径是：AI 社区说 Agent 需要 Memory，于是我们做 Memory System；召回性能不够，就增加 BM25、Vector Index、Cache、Tiered Storage；单机不够，就做分布式；进入企业以后，再补上 HA、Security、Multi-tenancy、Observability 和 Disaster Recovery。</p>
 <p>整个过程没有问题。</p>
 <p>但它基本可以概括成三个层次：</p>
-<p>[<br>Do\ the\ same \rightarrow Do\ it\ better \rightarrow Do\ more<br>]</p>
+<p>$$<br>Do\ the\ same \rightarrow Do\ it\ better \rightarrow Do\ more<br>$$</p>
 <p>第一层，把原来的能力搬过来；第二层，把它做得更好；第三层，则是让系统能够做原来做不到的事情。</p>
 <p>数据库社区现在非常擅长前两层，却经常在第三层之前停下来。</p>
 <p>Memory 就是这样。</p>
@@ -49,40 +49,40 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p>这些原因看起来都可以导向“Memory”，但它们实际上是完全不同的问题。</p>
 <p>一旦把问题问到这里，Memory Database 就不再是答案本身，而只是众多可能答案中的一种。</p>
 <p>这里可以使用一个很有用的反事实思维实验。假设：</p>
-<p>[<br>Storage\ Cost &#x3D; 0<br>]</p>
-<p>[<br>Retrieval\ Latency &#x3D; 0<br>]</p>
-<p>[<br>Context\ Length &#x3D; \infty<br>]</p>
+<p>$$<br>Storage\ Cost &#x3D; 0<br>$$</p>
+<p>$$<br>Retrieval\ Latency &#x3D; 0<br>$$</p>
+<p>$$<br>Context\ Length &#x3D; \infty<br>$$</p>
 <p>然后问一句：</p>
 <p><strong>原来的问题还存在吗？</strong></p>
 <p>如果我们研究的是“怎样从 10 亿条历史记录中，在 10ms 内找出最相关的 20 条 Memory”，那么当 Retrieval Latency &#x3D; 0 时，这个问题基本就消失了。这说明它主要是一个工程约束下的问题。</p>
 <p>但如果问题是：“什么应该记住？”“什么不应该记？”“什么时候应该忘？”“两条记忆冲突时应该相信哪一个？”“为什么一条过去的信息最终影响了今天的某个决策？”这些问题即使在无限存储、无限上下文和零延迟的思想实验中，依然不会自动消失。</p>
 <p>更重要的是，“上下文容量更大”本身也不等于“拥有了可靠的长期状态”。已有长上下文研究发现，即使信息已经放在模型支持的上下文窗口中，模型对不同位置的信息利用能力仍然可能显著不同。[4] 因此，更严谨的说法应该是：</p>
-<p>[<br>Context\ Capacity \neq Persistent\ State<br>]</p>
-<p>[<br>Context\ Capacity \neq Freshness<br>]</p>
-<p>[<br>Context\ Capacity \neq Shared\ Mutable\ Truth<br>]</p>
+<p>$$<br>Context\ Capacity \neq Persistent\ State<br>$$</p>
+<p>$$<br>Context\ Capacity \neq Freshness<br>$$</p>
+<p>$$<br>Context\ Capacity \neq Shared\ Mutable\ Truth<br>$$</p>
 <p>这说明我们已经从：</p>
-<p>[<br>信息检索<br>]</p>
+<p>$$<br>信息检索<br>$$</p>
 <p>进入了：</p>
-<p>[<br>语义 + 状态 + 学习 + 策略<br>]</p>
+<p>$$<br>语义 + 状态 + 学习 + 策略<br>$$</p>
 <p>这就是从“绕着问题继续转”开始向上爬了一层。</p>
 <p>所以真正值得注意的并不是 Memory 今天用了 BM25 还是 Vector Search，而是 <strong>Memory 这个问题本身是否正在发生性质变化。</strong></p>
 <p>2026 年一些 Agent Memory 研究已经开始把 Memory Management 看成一个包含写入、管理和读取的完整循环，并开始讨论遗忘、经验整合、持续学习等问题。[2] 这个变化很关键，因为关注点开始从“怎么存”和“怎么找”转向“为什么保存”“保存什么”和“什么时候应该改变已有记忆”，这才开始触碰真正的新问题。</p>
 <h2 id="三、从“记住什么”到“改变什么”"><a href="#三、从“记住什么”到“改变什么”" class="headerlink" title="三、从“记住什么”到“改变什么”"></a>三、从“记住什么”到“改变什么”</h2><p>顺着 Memory 继续往下追问，会发现 Context、Memory、State 和 Truth 并不是一回事：</p>
-<p>[<br>Context \neq Memory \neq State \neq Truth<br>]</p>
+<p>$$<br>Context \neq Memory \neq State \neq Truth<br>$$</p>
 <p>例如一个旅行 Agent。上下文中可能写着“用户准备周五晚上从北京去上海”；系统记住“用户偏好靠窗”；搜索工具返回“CAxxx 当前还有座位”。</p>
 <p>这些都还没有改变现实。</p>
 <p>只有当 Agent 真正调用 Booking API，并获得有效的 reservation ID 时，现实世界的状态才被改变。</p>
 <p>这时候 Agent 已经从：</p>
-<p>[<br>Read\ the\ World<br>]</p>
+<p>$$<br>Read\ the\ World<br>$$</p>
 <p>走到了：</p>
-<p>[<br>Mutate\ the\ World<br>]</p>
+<p>$$<br>Mutate\ the\ World<br>$$</p>
 <p>问题也因此发生变化。</p>
 <p>当 Agent 只是读取信息时，我们关心的是检索准确率；当 Agent 开始修改现实世界时，我们就必须考虑一致性、并发、隔离、幂等、回滚、恢复和冲突。</p>
 <p>这并不是“数据库可以把这些问题做得更快”，而是 Agent 本身的计算性质发生了变化。</p>
 <p>Microsoft 在介绍 STATE-Bench 时甚至直接指出：很多所谓 Memory Benchmark 实际上仍然只是 retrieval test——例如从几十轮之前找回一个名字或者事实，这只能说明“检索管道工作了”，不能证明 Agent 因此变得更好。STATE-Bench 因而把评估推进到真实的有状态任务中：Agent 不仅需要遵循流程，还会修改退款记录、预订状态和账户信息等数据库状态。此时错误已经不再只是“回答错了”，而可能是“把现实系统的状态改错了”。[5]</p>
 <p>所以这里值得注意的不是某个具体 benchmark，而是整个问题正在从“有没有记住”向“能否基于过去的经验正确地行动”移动。未来的 Agent 可能不能简单理解为“一个带 Memory 的 LLM”。</p>
 <p>它更像一个：</p>
-<p>[<br>Agent &#x3D;<br>Model + State + Computation + Environment + Action<br>]</p>
+<p>$$<br>Agent &#x3D;<br>Model + State + Computation + Environment + Action<br>$$</p>
 <p>也就是一个真正的有状态计算系统，而“有状态计算系统”与“带检索功能的模型”是两个完全不同的抽象。这就是一次真正的问题上升。</p>
 <h2 id="四、技术史上的上升从来不是“换一把刀”"><a href="#四、技术史上的上升从来不是“换一把刀”" class="headerlink" title="四、技术史上的上升从来不是“换一把刀”"></a>四、技术史上的上升从来不是“换一把刀”</h2><p>如果回头看计算机技术史，会发现真正重要的变化往往都不是“原来的方案再快 30%”，而是人们突然换了一种方式理解问题。</p>
 <p>1970 年，Codd 提出关系模型时，真正重要的并不是发明了一种更快的数据结构，而是把数据的逻辑表示与物理表示分开，让用户不需要依赖数据在机器内部的具体组织形式。[6]</p>
@@ -91,15 +91,15 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p>系统负责：</p>
 <p>“怎么实现。”</p>
 <p>于是逐渐形成：</p>
-<p>[<br>Logical\ Intent \neq Physical\ Execution<br>]</p>
+<p>$$<br>Logical\ Intent \neq Physical\ Execution<br>$$</p>
 <p>SQL 的真正意义不只是方便写查询，而是改变了人与数据系统之间的抽象边界。1979 年，Selinger 等人在 System R 的经典查询优化论文中进一步把这种思想工程化：SQL 请求以非过程式方式描述需要的数据，而系统根据代价选择具体的 access path。[7]</p>
 <p>后来查询优化器进一步把这个思想推进：</p>
-<p>[<br>Plan^*&#x3D;\arg\min_{p\in P}Cost(p)<br>]</p>
+<p>$$<br>Plan^*&#x3D;\arg\min_{p\in P}Cost(p)<br>$$</p>
 <p>用户不需要指定先扫哪张表、使用 Hash Join 还是 Merge Join、是否下推谓词。系统自己寻找执行计划。</p>
 <p>Transaction 也是一样。它真正重要的地方，并不是把几个 write 打包起来，而是人为建立了一个可以推理的状态边界：什么叫成功，什么叫失败，什么时候其他人可以看见，发生故障以后应该恢复到哪里。Jim Gray 在 1981 年对 Transaction Concept 的经典讨论中，甚至直接把 transaction 定义为一种具有原子性、持久性和一致性的“状态变换”，并指出这种抽象可能适用于更一般的程序系统，而不仅仅是数据库。[8]</p>
 <p>LSM-tree 同样不是因为 B-tree 突然“不能用了”，而是在新的 I&#x2F;O 条件和写入模式下，人们重新组织了读写之间的权衡。[9]</p>
 <p>所以数据库技术史不断重复一个模式：</p>
-<p>[<br>新约束<br>\rightarrow<br>旧抽象暴露不足<br>\rightarrow<br>重新定义问题<br>\rightarrow<br>形成新抽象<br>\rightarrow<br>出现新机制<br>]</p>
+<p>$$<br>新约束<br>\rightarrow<br>旧抽象暴露不足<br>\rightarrow<br>重新定义问题<br>\rightarrow<br>形成新抽象<br>\rightarrow<br>出现新机制<br>$$</p>
 <p>注意，这也是一个螺旋上升的过程。</p>
 <p>新的机制不会把旧技术全部推翻。关系数据库没有消灭文件系统，LSM-tree 没有消灭 B-tree，分布式数据库也没有消灭单机数据库。</p>
 <p>历史不断绕回来，但每一次真正重要的绕回来，都比上一次多了一层新的认识。</p>
@@ -109,40 +109,40 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p>数据库人的价值当然包括 B+Tree、LSM-tree、Buffer Pool、WAL、Hash Join 和 Query Optimizer，但这些都只是具体机制。</p>
 <p>数据库真正长期积累下来的是一套“问题语言”。别人说“数据一直在变化”，数据库人会想到 Version；别人说“很多人同时修改”，会想到 Concurrency；别人说“不能看到乱七八糟的中间状态”，会想到 Isolation；别人说“系统挂了也不能错”，会想到 Recovery；别人说“这个结果是由其他数据推导出来的”，会想到 Derived Data；别人说“同一个目标可以有很多执行方式”，会想到 Optimization。</p>
 <p>所以数据库人的思维往往会下意识追问：</p>
-<p>[<br>What\ is\ state?<br>]</p>
-<p>[<br>What\ is\ visible?<br>]</p>
-<p>[<br>What\ is\ committed?<br>]</p>
-<p>[<br>What\ is\ derived?<br>]</p>
-<p>[<br>What\ is\ stale?<br>]</p>
-<p>[<br>What\ can\ be\ recomputed?<br>]</p>
-<p>[<br>What\ is\ the\ cost?<br>]</p>
+<p>$$<br>What\ is\ state?<br>$$</p>
+<p>$$<br>What\ is\ visible?<br>$$</p>
+<p>$$<br>What\ is\ committed?<br>$$</p>
+<p>$$<br>What\ is\ derived?<br>$$</p>
+<p>$$<br>What\ is\ stale?<br>$$</p>
+<p>$$<br>What\ can\ be\ recomputed?<br>$$</p>
+<p>$$<br>What\ is\ the\ cost?<br>$$</p>
 <p>这些问题比具体用了什么索引重要得多。比如两个 Agent 同时修改一份 Shared Memory，一个普通的 Agent Framework 可能看到的是一个共享 JSON；数据库人的条件反射则可能是：谁先发生？哪个版本可见？有没有 write-write conflict？冲突如何合并？这并不意味着数据库人的答案一定更先进。真正重要的是，不同领域会用不同的方式表示同一个问题：</p>
-<p>[<br>Representation_{AI}(X)<br>\neq<br>Representation_{DB}(X)<br>]</p>
+<p>$$<br>Representation_{AI}(X)<br>\neq<br>Representation_{DB}(X)<br>$$</p>
 <p>而问题的表示方式决定搜索空间：</p>
-<p>[<br>Representation<br>\rightarrow<br>Search\ Space<br>\rightarrow<br>Problems\ We\ Can\ See<br>]</p>
+<p>$$<br>Representation<br>\rightarrow<br>Search\ Space<br>\rightarrow<br>Problems\ We\ Can\ See<br>$$</p>
 <p>这就是跨领域研究真正有价值的地方，不是把数据库人的 B+Tree 搬给 AI 人用，也不是 AI 人说需要一个 Memory，数据库人就做一个 MemoryDB。</p>
 <p>而是两个领域面对同一个问题时，其中一方突然说：</p>
 <p><strong>“你为什么一定要这样定义这个问题？”</strong></p>
 <h2 id="六、Memory-真正的变化发生在问题边界"><a href="#六、Memory-真正的变化发生在问题边界" class="headerlink" title="六、Memory 真正的变化发生在问题边界"></a>六、Memory 真正的变化发生在问题边界</h2><p>再回到 Memory，最开始的问题是：</p>
-<p>[<br>History \rightarrow Store \rightarrow Retrieve<br>]</p>
+<p>$$<br>History \rightarrow Store \rightarrow Retrieve<br>$$</p>
 <p>接下来可能变成：</p>
-<p>[<br>History \rightarrow Reflection \rightarrow Memory<br>]</p>
+<p>$$<br>History \rightarrow Reflection \rightarrow Memory<br>$$</p>
 <p>继续往前：</p>
-<p>[<br>Trajectory + Outcome \rightarrow Experience<br>]</p>
+<p>$$<br>Trajectory + Outcome \rightarrow Experience<br>$$</p>
 <p>然后：</p>
-<p>[<br>Experience \rightarrow Future\ Policy<br>]</p>
+<p>$$<br>Experience \rightarrow Future\ Policy<br>$$</p>
 <p>到了最后一步，Memory 已经不再只是“过去发生过什么”。</p>
 <p>它变成了：</p>
 <p>“过去哪里做错了？”</p>
 <p>“什么做法曾经成功？”</p>
 <p>“以后遇到类似情况，应该改变什么行为？”</p>
 <p>于是：</p>
-<p>[<br>Memory<br>\rightarrow<br>Experience<br>\rightarrow<br>Learning<br>]</p>
+<p>$$<br>Memory<br>\rightarrow<br>Experience<br>\rightarrow<br>Learning<br>$$</p>
 <p>问题边界已经改变。这也与前面提到的“Storage → Reflection → Experience”的研究脉络相呼应。[2]</p>
 <p>原来我们优化的是：</p>
-<p>[<br>Retrieve(x)<br>]</p>
+<p>$$<br>Retrieve(x)<br>$$</p>
 <p>现在开始考虑：</p>
-<p>[<br>\pi_m(s)<br>\rightarrow<br>{store,retrieve,merge,summarize,update,forget}<br>]</p>
+<p>$$<br>\pi_m(s)<br>\rightarrow<br>{store,retrieve,merge,summarize,update,forget}<br>$$</p>
 <p>也就是：模型或者系统需要决定什么值得记住、什么时候应该更新、什么时候应该遗忘。尤其是“遗忘”这个问题很有意思，传统 Memory System 很容易默认：</p>
 <p><strong>存得越多越好。</strong></p>
 <p>因为存储系统天然关心的是如何高效地保存数据，但对于 Agent 来说，也许真正的问题恰恰是：</p>
@@ -154,23 +154,23 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p>变成：</p>
 <p>“这道菜里什么东西根本不应该下锅？”</p>
 <p>问题已经不是同一个问题了，也意味着，这可能并不是数据库人所熟悉的问题了。但是，正是这种陌生感，才会不断推动对“问题边界”的探索。</p>
-
+<img src="/2026/08/07/agent-era-database-rethinking-2026/p2.png" class="" title="换刀还是换问题">
 
 <h2 id="七、为什么大家总在研究同一批问题？"><a href="#七、为什么大家总在研究同一批问题？" class="headerlink" title="七、为什么大家总在研究同一批问题？"></a>七、为什么大家总在研究同一批问题？</h2><p>既然这个道理并不复杂，为什么技术社区还是很容易不断聚集到少数几个问题上？</p>
 <p>我觉得不能简单归结为研究者缺乏创造力，也不能说大家都只是跟风，这更像是一个群体注意力分配问题。整个研究社区能够投入的研究者、资金、GPU、论文名额、创业资源和职业机会都是有限的，于是整个系统必须不停判断：</p>
 <p><strong>什么问题最值得投入？</strong></p>
 <p>某个方向出现一篇重要论文，就会获得更多引用；更多引用带来更多关注；大公司开始进入以后，又产生 benchmark、产品和招聘需求；这些信号继续吸引更多研究者。</p>
 <p>于是形成：</p>
-<p>[<br>Attention_t<br>\rightarrow<br>Results<br>\rightarrow<br>Visibility<br>\rightarrow<br>Attention_{t+1}<br>]</p>
+<p>$$<br>Attention_t<br>\rightarrow<br>Results<br>\rightarrow<br>Visibility<br>\rightarrow<br>Attention_{t+1}<br>$$</p>
 <p>Merton 在 1968 年提出的“马太效应”本身就是对科学共同体中累积优势的分析：已经获得声望和认可的科学家，更容易进一步获得信用和资源。[10] 后来的网络科学又使用 preferential attachment 等模型刻画了类似的自增强结构。</p>
 <p>所以：</p>
 <p>“很多优秀的人都在研究 X”</p>
 <p>本身当然是有信息量的。</p>
 <p>我们可以把它<strong>类比成一种低成本的贝叶斯更新</strong>：</p>
-<p>[<br>P(X\ is\ valuable \mid Many\ Experts\ Study\ X)</p>
+<p>$$<br>P(X\ is\ valuable \mid Many\ Experts\ Study\ X)</p>
 <blockquote>
 </blockquote>
-<p>P(X\ is\ valuable)<br>]</p>
+<p>P(X\ is\ valuable)<br>$$</p>
 <p>它不是一个严格的贝叶斯模型，而是在表达一种很常见、也很合理的判断机制：当越来越多优秀的人投入一个方向时，我们自然会提高对这个方向价值的判断。</p>
 <p>问题只是，一旦整个社区都使用类似的判断逻辑，就会出现自增强。</p>
 <p>于是：</p>
@@ -185,7 +185,7 @@ gtag('config', 'G-E2FX2CYEJQ');
 <h2 id="八、螺旋上升：重点在“上升”"><a href="#八、螺旋上升：重点在“上升”" class="headerlink" title="八、螺旋上升：重点在“上升”"></a>八、螺旋上升：重点在“上升”</h2><p>James March 在 1991 年讨论组织学习时提出了“探索”和“利用”之间的基本矛盾：一边是探索新的可能性，一边是继续利用已经知道有效的东西。更值得注意的是，他进一步指出，适应性系统往往会比探索更快地优化“利用”，因此可能在短期越来越有效，却在长期把自己锁死。[11]</p>
 <p>数据库社区今天大量工作实际上是在做后者。</p>
 <p>比如 Memory 已经被证明重要，那么接下来可以卷吞吐、卷延迟、卷索引、卷成本、卷企业能力。它们都很合理，但如果整个领域长期只做这件事情，就会出现一个问题：</p>
-<p>[<br>探索 &#x2F; 利用<br>]</p>
+<p>$$<br>探索 &#x2F; 利用<br>$$</p>
 <p>这个比例越来越低。</p>
 <p>于是所谓“螺旋上升”最后只剩下了“螺旋”。大家一直在绕：VectorDB 不够准，就加 BM25；BM25 不够语义化，就加 Embedding；Embedding 不够精确，就做 Reranking；Reranking 成本太高，再加 Cache。</p>
 <p>每一轮都有进步，但如果十年以后，我们仍然回答的是：</p>
@@ -202,9 +202,9 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p>最后甚至可能变成：</p>
 <p>“什么东西根本不应该以外部 Memory 的形式存在？”</p>
 <p>这才是从问题 (P_0) 走向：</p>
-<p>[<br>P_0 \rightarrow P_1 \rightarrow P_2<br>]</p>
+<p>$$<br>P_0 \rightarrow P_1 \rightarrow P_2<br>$$</p>
 <p>而不是：</p>
-<p>[<br>S_1(P_0)\rightarrow S_2(P_0)\rightarrow S_3(P_0)<br>]</p>
+<p>$$<br>S_1(P_0)\rightarrow S_2(P_0)\rightarrow S_3(P_0)<br>$$</p>
 <p>前者是在发现新问题。</p>
 <p>后者是在给同一道题不断换解法。</p>
 <p>两者都需要，但不能混为一谈。</p>
@@ -215,9 +215,9 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p>真正值得警惕的是：</p>
 <p><strong>当一个新的计算范式刚刚出现时，我们是不是过早地用旧范式替它定义了问题？</strong></p>
 <p>如果数据库人一看到 Agent Memory，就自动把它翻译成：</p>
-<p>[<br>Memory &#x3D; Storage + Retrieval<br>]</p>
+<p>$$<br>Memory &#x3D; Storage + Retrieval<br>$$</p>
 <p>那么后面所有研究自然都会进入：</p>
-<p>[<br>Storage\ Optimization + Retrieval\ Optimization<br>]</p>
+<p>$$<br>Storage\ Optimization + Retrieval\ Optimization<br>$$</p>
 <p>如果看到 Trace，就自动翻译成 Log，那么后面自然会开始研究 Log Storage。</p>
 <p>这种翻译未必错。</p>
 <p>但它可能只翻译出了问题最熟悉的那一部分。</p>
@@ -231,34 +231,34 @@ gtag('config', 'G-E2FX2CYEJQ');
 <p>“Vector Database 可以怎么用于 Agent？”</p>
 <p>看起来是在提问题。</p>
 <p>其实答案已经确定了：</p>
-<p>[<br>Solution &#x3D; VectorDB<br>]</p>
+<p>$$<br>Solution &#x3D; VectorDB<br>$$</p>
 <p>剩下的只是寻找一个适合它的场景。</p>
 <p>同样：</p>
 <p>“我们能不能做一个 Agent Memory Database？”</p>
 <p>也已经默认了：</p>
-<p>[<br>Memory \rightarrow Database<br>]</p>
+<p>$$<br>Memory \rightarrow Database<br>$$</p>
 <p>然后所有创造力都被限制在这个框架中。</p>
 <p>但如果重新问：</p>
 <p>“Agent 为什么需要 Memory？”</p>
 <p>搜索空间马上会扩大。</p>
 <p>也许是 context management，也许是 external state，也许是 model adaptation，也许是 continual learning，也许是 world model，也许是 tool state，也许问题根本就不应该叫 Memory。</p>
 <p>这时候：</p>
-<p>[<br>MemoryDB \in Solution\ Space<br>]</p>
+<p>$$<br>MemoryDB \in Solution\ Space<br>$$</p>
 <p>而不是：</p>
-<p>[<br>MemoryDB &#x3D; Solution<br>]</p>
+<p>$$<br>MemoryDB &#x3D; Solution<br>$$</p>
 <p>这个顺序差别非常大，因为错误的问题定义，会让整个领域非常高效地跑向错误方向。</p>
 <p>在一个成熟问题上，解决方案优化当然非常重要，但在一个新范式刚刚形成的时候，我其实更愿意相信：</p>
-<p>[<br>Problem\ Discovery &gt; Solution\ Optimization<br>]</p>
+<p>$$<br>Problem\ Discovery &gt; Solution\ Optimization<br>$$</p>
 <p>不是因为优化不重要，而是：</p>
-<p>[<br>把错误的问题优化1000倍<br>]</p>
+<p>$$<br>把错误的问题优化1000倍<br>$$</p>
 <p>仍然是在解决错误的问题。</p>
 <h2 id="十一、数据库社区的“自嗨”"><a href="#十一、数据库社区的“自嗨”" class="headerlink" title="十一、数据库社区的“自嗨”"></a>十一、数据库社区的“自嗨”</h2><p>为什么有人认为数据库社区今天多少有一点“自嗨”？</p>
 <p>因为我们经常使用这样一条逻辑：</p>
-<p>[<br>Agent需要Memory<br>]</p>
-<p>[<br>Memory需要Storage<br>]</p>
-<p>[<br>Storage属于Database<br>]</p>
+<p>$$<br>Agent需要Memory<br>$$</p>
+<p>$$<br>Memory需要Storage<br>$$</p>
+<p>$$<br>Storage属于Database<br>$$</p>
 <p>所以：</p>
-<p>[<br>Database在Agent时代非常重要<br>]</p>
+<p>$$<br>Database在Agent时代非常重要<br>$$</p>
 <p>这当然是一个逻辑上成立的三段论，但它没有多少信息量，原因很简单：</p>
 <blockquote>
 <p>Agent 需要网络，所以网络很重要；需要 GPU，所以体系结构很重要；需要执行代码，所以编译器和运行时也很重要；需要资源调度，所以操作系统也很重要。</p>
