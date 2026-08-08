@@ -56,8 +56,11 @@ block content
     if page.toc !== false
       .clear
         #toc.toc-article
-          .toc-title= __('contents')
-          != toc(page.content, {list_number: theme.toc_number})
+          button.toc-toggle(type='button', aria-expanded='false')
+            span.toc-title= __('contents')
+            i.fa.fa-list-ul(aria-hidden='true')
+          .toc-body
+            != toc(page.content, {list_number: theme.toc_number})
     .post-content
       != page.content
     if theme.donate.enable == true && page.donate != false

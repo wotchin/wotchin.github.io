@@ -1,6 +1,6 @@
 ---
 name: jacks-ai-studio-blog
-description: Maintain and extend the Jack's AI Studio Hexo blog. Use when editing posts, translating Chinese/English versions, adding images, changing the Maupassant theme, troubleshooting Hexo generation, or preserving this blog's professional AI/data-infrastructure positioning and bilingual language-switching behavior.
+description: Maintain and extend the Jack's AI Studio Hexo blog. Use when editing posts, translating Chinese/English versions, adding images, changing the jas-studio theme, troubleshooting Hexo generation, or preserving this blog's professional AI/data-infrastructure positioning and bilingual language-switching behavior.
 ---
 
 # Jack's AI Studio Blog
@@ -68,11 +68,11 @@ Current bilingual behavior depends on these files:
 
 - `_config.yml`: English default; home/archive pagination disabled to avoid mixed-language pagination artifacts.
 - `scripts/language-pages.js`: generates `/zh/`, `/zh/archives/`, `/zh/tags/`, and Chinese tag archives.
-- `themes/maupassant/layout/base.pug`: language switch and localized nav paths.
-- `themes/maupassant/layout/index.pug`, `archive.pug`, `tagcloud.pug`: language-filtered listing pages.
-- `themes/maupassant/layout/_widget/recent_posts.pug`, `_widget/tag.pug`: language-filtered sidebar widgets.
-- `themes/maupassant/layout/post.pug`: article-level translation link.
-- `themes/maupassant/layout/_partial/tag.pug`: language-aware article tag links.
+- `themes/jas-studio/layout/base.pug`: language switch and localized nav paths.
+- `themes/jas-studio/layout/index.pug`, `archive.pug`, `tagcloud.pug`: language-filtered listing pages.
+- `themes/jas-studio/layout/_widget/recent_posts.pug`, `_widget/tag.pug`: language-filtered sidebar widgets.
+- `themes/jas-studio/layout/post.pug`: article-level translation link.
+- `themes/jas-studio/layout/_partial/tag.pug`: language-aware article tag links.
 
 When editing Pug templates:
 

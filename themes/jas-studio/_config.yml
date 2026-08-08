@@ -49,7 +49,7 @@ waline: ## See: https://waline.js.org/
   count: 5 ## The number comments displayed in the recent_comments widget, default is 10.
 utterances: ## See: https://utteranc.es
   enable: false ## If you want to use Utterances comment system, please set the value to true.
-  repo: ## The repository utterances will connect to, e.g. tufu9441/comments
+  repo: ## The repository utterances will connect to, e.g. yourname/comments
   identifier: title ## The mapping between blog posts and GitHub issues.
   theme: github-light ## Choose an Utterances theme which matches your blog.
 twikoo: ## See: https://twikoo.js.org
@@ -85,10 +85,10 @@ donate:
   wechat_qr: ## Path of Wechat QRcode image, e.g. /img/WeChatQR.png
   btc_qr: ## Path of Bitcoin QRcode image, e.g. /img/BTCQR.png
   btc_key: ## Bitcoin key, e.g. 1KuK5eK2BLsqpsFVXXSBG5wbSAwZVadt6L
-  paypal_url: ## Paypal URL, e.g. https://www.paypal.me/tufu9441
+  paypal_url: ## Paypal URL, e.g. https://www.paypal.me/yourname
 post_copyright:
   enable: false ## If you want to display the copyright info after each post, please set the value to true and fill the following items on your need.
-  author: ## Your author name, e.g. tufu9441
+  author: ## Your author name, e.g. wotchin
   copyright_text: ## Your copyright text, e.g. The author owns the copyright, please indicate the source reproduced.
 love: false ## If you want the love to appear when you click anywhere, set the value to true.
 plantuml: ## Using PlantUML to generate UML diagram, must install hexo-filter-plantuml (https://github.com/miao1007/hexo-filter-plantuml).

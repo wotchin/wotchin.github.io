@@ -56,17 +56,18 @@ html(lang=currentLang === 'zh' ? 'zh-CN' : 'en')
   include _partial/head.pug
   body: .body_container
     #header
-      .site-name
-        h1.hidden= current_title
-        a#logo(href=url_for('.'))= config.title
-        p.description= config.subtitle
-      #nav-menu
-        - for (var i in theme.menu)
-          +a_with_current(localizedMenuPath(theme.menu[i].directory), __(theme.menu[i].page), theme.menu[i].icon)
-        .language-switch(aria-label="Language")
-          a(class=currentLang === 'en' ? 'active' : '', href=url_for(languageSwitchPath('en'))) EN
-          span /
-          a(class=currentLang === 'zh' ? 'active' : '', href=url_for(languageSwitchPath('zh'))) 中文
+      .header-inner
+        .site-name
+          h1.hidden= current_title
+          a#logo(href=url_for('.'))= config.title
+          p.description= config.subtitle
+        #nav-menu
+          - for (var i in theme.menu)
+            +a_with_current(localizedMenuPath(theme.menu[i].directory), __(theme.menu[i].page), theme.menu[i].icon)
+          .language-switch(aria-label="Language")
+            a(class=currentLang === 'en' ? 'active' : '', href=url_for(languageSwitchPath('en'))) EN
+            span /
+            a(class=currentLang === 'zh' ? 'active' : '', href=url_for(languageSwitchPath('zh'))) 中文
 
     #layout.pure-g
       .pure-u-1.pure-u-md-3-4: .content_container

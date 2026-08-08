@@ -148,16 +148,16 @@ Important files:
 
 - `_config.yml`
 - `scripts/language-pages.js`
-- `themes/maupassant/_config.yml`
-- `themes/maupassant/layout/base.pug`
-- `themes/maupassant/layout/index.pug`
-- `themes/maupassant/layout/archive.pug`
-- `themes/maupassant/layout/tagcloud.pug`
-- `themes/maupassant/layout/post.pug`
-- `themes/maupassant/layout/_partial/tag.pug`
-- `themes/maupassant/layout/_widget/recent_posts.pug`
-- `themes/maupassant/layout/_widget/tag.pug`
-- `themes/maupassant/source/css/style.scss`
+- `themes/jas-studio/_config.yml`
+- `themes/jas-studio/layout/base.pug`
+- `themes/jas-studio/layout/index.pug`
+- `themes/jas-studio/layout/archive.pug`
+- `themes/jas-studio/layout/tagcloud.pug`
+- `themes/jas-studio/layout/post.pug`
+- `themes/jas-studio/layout/_partial/tag.pug`
+- `themes/jas-studio/layout/_widget/recent_posts.pug`
+- `themes/jas-studio/layout/_widget/tag.pug`
+- `themes/jas-studio/source/css/style.scss`
 
 ## Hexo and Pug Pitfalls Already Encountered
 
