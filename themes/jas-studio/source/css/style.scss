@@ -19,14 +19,14 @@ select,
 textarea,
 .MJXc-TeX-unknown-R,
 .pure-g [class *="pure-u"] {
-    /* Set your content font stack here: */
-    font-family: "PingFangSC-Regular", Helvetica, "Helvetica Neue", "Segoe UI", "Hiragino Sans GB", "Source Han Sans CN", "Microsoft YaHei", "STHeiti", "WenQuanYi Micro Hei", sans-serif !important;
+    /* Single sans stack: system UI fonts only, no webfont dependencies */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif !important;
 }
 
 body {
     background-color: #FFF;
     color: #444;
-    font-family: "TIBch", "Classic Grotesque W01", "Helvetica Neue", Arial, "Hiragino Sans GB", "STHeiti", "Microsoft YaHei", "WenQuanYi Micro Hei", SimSun, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 14px;
@@ -87,7 +87,7 @@ div {
         }
 
         #logo {
-            font: bold 38px/1.12 "Times New Roman", Georgia, Times, sans-serif;
+            font: bold 38px/1.12 Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
             color: #555;
 
             span,
@@ -268,7 +268,7 @@ div {
         margin: 0;
         color: #555;
         text-align: left;
-        font: bold 25px/1.1 "ff-tisa-web-pro", Cambria, "Times New Roman", Georgia, Times, sans-serif;
+        font: bold 25px/1.1 Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
 
         a {
             color: #555;
@@ -392,7 +392,7 @@ div {
                 margin: 0 5px;
                 padding: 0 5px;
                 background: #f7f8f8;
-                font-family: Menlo, Consolas, monospace !important;
+                font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace !important;
             }
 
             a {
@@ -443,7 +443,7 @@ div {
                 margin: 0 5px;
                 padding: 0px 5px;
                 background: #f7f8f8;
-                font-family: Menlo, Consolas, monospace !important;
+                font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace !important;
             }
 
             a {
@@ -581,7 +581,7 @@ div {
 
     h2 {
         margin: 0;
-        font: bold 25px / 1.1 "ff-tisa-web-pro", Cambria, "Times New Roman", Georgia, Times, sans-serif;
+        font: bold 25px / 1.1 Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
     }
 
     .date {
@@ -661,7 +661,7 @@ blockquote::before,
 .stressed-quote::before {
     content: "\201C";
     display: block;
-    font-family: times;
+    font-family: Georgia, serif;
     font-style: normal;
     font-size: 48px;
     color: #444;
@@ -839,7 +839,7 @@ screen and (min-width: 48em) {
 }
 
 #process span.number {
-    font-family: 'Georgia', serif, Helvetica, "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", "WenQuanYi Micro Hei", Arial, sans-serif;
+    font-family: Georgia, serif;
     font-style: italic;
     font-size: 20px;
     line-height: 0;
@@ -870,7 +870,6 @@ screen and (min-width: 48em) {
 }
 
 .timeline-label p {
-    font-family: Helvetica, "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", "WenQuanYi Micro Hei", Arial, sans-serif;
     margin-bottom: 3px
 }
 
@@ -981,7 +980,7 @@ screen and (min-width: 48em) {
 #process .present,
 #process .born {
     font-size: 14px;
-    font-family: 'Georgia', serif, Helvetica, "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", "WenQuanYi Micro Hei", Arial, sans-serif;
+    font-family: Georgia, serif;
     font-style: italic;
     color: #333;
     padding: 10px;
@@ -1123,7 +1122,7 @@ figure.highlight,
     .code,
     .tag {
         background-color: inherit;
-        font-family: Menlo, Consolas, monospace;
+        font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace;
         border: none;
         padding: 0;
         margin: 0;
@@ -1190,7 +1189,7 @@ figure.highlight,
 
     .line,
     .line-number {
-        font-family: Menlo, Consolas, monospace;
+        font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace;
         font-size: 1em;
         margin: 0 0 5px 0;
         user-select: none;
@@ -2017,7 +2016,7 @@ table {
     width: 100%;
     background: none;
     box-sizing: border-box;
-    font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
     padding: 0 15px;
     color: #555;
     outline: none;
@@ -2150,7 +2149,6 @@ em.search-keyword {
     min-width: 50px;
     padding: 0 14px;
     display: inline-block;
-    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
     font-size: 14px;
     font-weight: 400;
     letter-spacing: 0;
@@ -2476,7 +2474,7 @@ body {
         margin-bottom: 28px;
 
         #logo {
-            font: 700 30px/1.2 "Helvetica Neue", Arial, "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            font: 700 30px/1.2 Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
             color: #1f2933;
         }
 
@@ -2884,8 +2882,8 @@ body {
         flex-shrink: 0;
 
         #logo {
-            font: 600 20px/1.25 "Helvetica Neue", Arial, "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-            letter-spacing: -0.015em;
+            font: 600 20px/1.25 Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
+            letter-spacing: -0.01em;
             white-space: nowrap;
             color: var(--jas-ink);
 
@@ -2996,7 +2994,7 @@ body {
     padding-top: 10px;
 
     .post-title {
-        font: 700 30px/1.25 "ff-tisa-web-pro", Cambria, "Times New Roman", Georgia, "Songti SC", "SimSun", serif;
+        font: 700 30px/1.25 Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
         letter-spacing: -0.01em;
         color: var(--jas-ink);
     }

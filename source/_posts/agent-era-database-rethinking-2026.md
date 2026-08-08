@@ -32,9 +32,9 @@ Long-term Memory、Episodic Memory、Semantic Memory、Working Memory、User Mem
 
 但是，如果把这些系统一层一层剥开，**相当一部分当前 Agent Memory 的存储与召回层**仍然可以抽象成：
 
-[
+$$
 Memory = Extract + Store + Index + Retrieve + Rank + Inject
-]
+$$
 
 一段历史交互经过信息抽取，被保存到某种存储中，再通过关键词、向量或者混合索引召回，经过排序以后重新放回上下文。
 
@@ -42,9 +42,9 @@ Memory = Extract + Store + Index + Retrieve + Rank + Inject
 
 简单一点的个人 Agent，`markdown + grep` 可能已经能够满足需求；复杂一点，可以变成：
 
-[
+$$
 BM25 + Embedding + Metadata\ Filter + Reranker
-]
+$$
 
 它们实现方式不同，效果不同，性能不同，但解决的核心问题仍然是同一个：
 
@@ -78,15 +78,15 @@ LangChain 的 SmithDB 是一个很好的例子。它针对 LangSmith 的 Agent T
 
 所以这里应该明确区分：
 
-[
+$$
 旧机制 + 新工作负载 \rightarrow 更好的系统
-]
+$$
 
 和：
 
-[
+$$
 新问题 \rightarrow 新抽象 \rightarrow 新机制
-]
+$$
 
 前者当然重要，而且是数据库工程最擅长的事情。但它和后者并不是一回事。
 
@@ -98,9 +98,9 @@ LangChain 的 SmithDB 是一个很好的例子。它针对 LangSmith 的 Agent T
 
 但它基本可以概括成三个层次：
 
-[
+$$
 Do\ the\ same \rightarrow Do\ it\ better \rightarrow Do\ more
-]
+$$
 
 第一层，把原来的能力搬过来；第二层，把它做得更好；第三层，则是让系统能够做原来做不到的事情。
 
@@ -120,17 +120,17 @@ Memory 就是这样。
 
 这里可以使用一个很有用的反事实思维实验。假设：
 
-[
+$$
 Storage\ Cost = 0
-]
+$$
 
-[
+$$
 Retrieval\ Latency = 0
-]
+$$
 
-[
+$$
 Context\ Length = \infty
-]
+$$
 
 然后问一句：
 
@@ -142,29 +142,29 @@ Context\ Length = \infty
 
 更重要的是，“上下文容量更大”本身也不等于“拥有了可靠的长期状态”。已有长上下文研究发现，即使信息已经放在模型支持的上下文窗口中，模型对不同位置的信息利用能力仍然可能显著不同。[4] 因此，更严谨的说法应该是：
 
-[
+$$
 Context\ Capacity \neq Persistent\ State
-]
+$$
 
-[
+$$
 Context\ Capacity \neq Freshness
-]
+$$
 
-[
+$$
 Context\ Capacity \neq Shared\ Mutable\ Truth
-]
+$$
 
 这说明我们已经从：
 
-[
+$$
 信息检索
-]
+$$
 
 进入了：
 
-[
+$$
 语义 + 状态 + 学习 + 策略
-]
+$$
 
 这就是从“绕着问题继续转”开始向上爬了一层。
 
@@ -176,9 +176,9 @@ Context\ Capacity \neq Shared\ Mutable\ Truth
 
 顺着 Memory 继续往下追问，会发现 Context、Memory、State 和 Truth 并不是一回事：
 
-[
+$$
 Context \neq Memory \neq State \neq Truth
-]
+$$
 
 例如一个旅行 Agent。上下文中可能写着“用户准备周五晚上从北京去上海”；系统记住“用户偏好靠窗”；搜索工具返回“CAxxx 当前还有座位”。
 
@@ -188,15 +188,15 @@ Context \neq Memory \neq State \neq Truth
 
 这时候 Agent 已经从：
 
-[
+$$
 Read\ the\ World
-]
+$$
 
 走到了：
 
-[
+$$
 Mutate\ the\ World
-]
+$$
 
 问题也因此发生变化。
 
@@ -210,10 +210,10 @@ Microsoft 在介绍 STATE-Bench 时甚至直接指出：很多所谓 Memory Benc
 
 它更像一个：
 
-[
+$$
 Agent =
 Model + State + Computation + Environment + Action
-]
+$$
 
 也就是一个真正的有状态计算系统，而“有状态计算系统”与“带检索功能的模型”是两个完全不同的抽象。这就是一次真正的问题上升。
 
@@ -233,17 +233,17 @@ Model + State + Computation + Environment + Action
 
 于是逐渐形成：
 
-[
+$$
 Logical\ Intent \neq Physical\ Execution
-]
+$$
 
 SQL 的真正意义不只是方便写查询，而是改变了人与数据系统之间的抽象边界。1979 年，Selinger 等人在 System R 的经典查询优化论文中进一步把这种思想工程化：SQL 请求以非过程式方式描述需要的数据，而系统根据代价选择具体的 access path。[7]
 
 后来查询优化器进一步把这个思想推进：
 
-[
+$$
 Plan^*=\arg\min_{p\in P}Cost(p)
-]
+$$
 
 用户不需要指定先扫哪张表、使用 Hash Join 还是 Merge Join、是否下推谓词。系统自己寻找执行计划。
 
@@ -253,7 +253,7 @@ LSM-tree 同样不是因为 B-tree 突然“不能用了”，而是在新的 I/
 
 所以数据库技术史不断重复一个模式：
 
-[
+$$
 新约束
 \rightarrow
 旧抽象暴露不足
@@ -263,7 +263,7 @@ LSM-tree 同样不是因为 B-tree 突然“不能用了”，而是在新的 I/
 形成新抽象
 \rightarrow
 出现新机制
-]
+$$
 
 注意，这也是一个螺旋上升的过程。
 
@@ -285,51 +285,51 @@ LSM-tree 同样不是因为 B-tree 突然“不能用了”，而是在新的 I/
 
 所以数据库人的思维往往会下意识追问：
 
-[
+$$
 What\ is\ state?
-]
+$$
 
-[
+$$
 What\ is\ visible?
-]
+$$
 
-[
+$$
 What\ is\ committed?
-]
+$$
 
-[
+$$
 What\ is\ derived?
-]
+$$
 
-[
+$$
 What\ is\ stale?
-]
+$$
 
-[
+$$
 What\ can\ be\ recomputed?
-]
+$$
 
-[
+$$
 What\ is\ the\ cost?
-]
+$$
 
 这些问题比具体用了什么索引重要得多。比如两个 Agent 同时修改一份 Shared Memory，一个普通的 Agent Framework 可能看到的是一个共享 JSON；数据库人的条件反射则可能是：谁先发生？哪个版本可见？有没有 write-write conflict？冲突如何合并？这并不意味着数据库人的答案一定更先进。真正重要的是，不同领域会用不同的方式表示同一个问题：
 
-[
+$$
 Representation_{AI}(X)
 \neq
 Representation_{DB}(X)
-]
+$$
 
 而问题的表示方式决定搜索空间：
 
-[
+$$
 Representation
 \rightarrow
 Search\ Space
 \rightarrow
 Problems\ We\ Can\ See
-]
+$$
 
 这就是跨领域研究真正有价值的地方，不是把数据库人的 B+Tree 搬给 AI 人用，也不是 AI 人说需要一个 Memory，数据库人就做一个 MemoryDB。
 
@@ -341,27 +341,27 @@ Problems\ We\ Can\ See
 
 再回到 Memory，最开始的问题是：
 
-[
+$$
 History \rightarrow Store \rightarrow Retrieve
-]
+$$
 
 接下来可能变成：
 
-[
+$$
 History \rightarrow Reflection \rightarrow Memory
-]
+$$
 
 继续往前：
 
-[
+$$
 Trajectory + Outcome \rightarrow Experience
-]
+$$
 
 然后：
 
-[
+$$
 Experience \rightarrow Future\ Policy
-]
+$$
 
 到了最后一步，Memory 已经不再只是“过去发生过什么”。
 
@@ -375,29 +375,29 @@ Experience \rightarrow Future\ Policy
 
 于是：
 
-[
+$$
 Memory
 \rightarrow
 Experience
 \rightarrow
 Learning
-]
+$$
 
 问题边界已经改变。这也与前面提到的“Storage → Reflection → Experience”的研究脉络相呼应。[2]
 
 原来我们优化的是：
 
-[
+$$
 Retrieve(x)
-]
+$$
 
 现在开始考虑：
 
-[
+$$
 \pi_m(s)
 \rightarrow
 {store,retrieve,merge,summarize,update,forget}
-]
+$$
 
 也就是：模型或者系统需要决定什么值得记住、什么时候应该更新、什么时候应该遗忘。尤其是“遗忘”这个问题很有意思，传统 Memory System 很容易默认：
 
@@ -435,7 +435,7 @@ Retrieve(x)
 
 于是形成：
 
-[
+$$
 Attention_t
 \rightarrow
 Results
@@ -443,7 +443,7 @@ Results
 Visibility
 \rightarrow
 Attention_{t+1}
-]
+$$
 
 Merton 在 1968 年提出的“马太效应”本身就是对科学共同体中累积优势的分析：已经获得声望和认可的科学家，更容易进一步获得信用和资源。[10] 后来的网络科学又使用 preferential attachment 等模型刻画了类似的自增强结构。
 
@@ -455,13 +455,13 @@ Merton 在 1968 年提出的“马太效应”本身就是对科学共同体中�
 
 我们可以把它**类比成一种低成本的贝叶斯更新**：
 
-[
+$$
 P(X\ is\ valuable \mid Many\ Experts\ Study\ X)
 
 >
 
 P(X\ is\ valuable)
-]
+$$
 
 它不是一个严格的贝叶斯模型，而是在表达一种很常见、也很合理的判断机制：当越来越多优秀的人投入一个方向时，我们自然会提高对这个方向价值的判断。
 
@@ -493,9 +493,9 @@ James March 在 1991 年讨论组织学习时提出了“探索”和“利用�
 
 比如 Memory 已经被证明重要，那么接下来可以卷吞吐、卷延迟、卷索引、卷成本、卷企业能力。它们都很合理，但如果整个领域长期只做这件事情，就会出现一个问题：
 
-[
+$$
 探索 / 利用
-]
+$$
 
 这个比例越来越低。
 
@@ -529,15 +529,15 @@ James March 在 1991 年讨论组织学习时提出了“探索”和“利用�
 
 这才是从问题 (P_0) 走向：
 
-[
+$$
 P_0 \rightarrow P_1 \rightarrow P_2
-]
+$$
 
 而不是：
 
-[
+$$
 S_1(P_0)\rightarrow S_2(P_0)\rightarrow S_3(P_0)
-]
+$$
 
 前者是在发现新问题。
 
@@ -561,15 +561,15 @@ Kuhn 在《科学革命的结构》中讨论“常规科学”时指出，一个
 
 如果数据库人一看到 Agent Memory，就自动把它翻译成：
 
-[
+$$
 Memory = Storage + Retrieval
-]
+$$
 
 那么后面所有研究自然都会进入：
 
-[
+$$
 Storage\ Optimization + Retrieval\ Optimization
-]
+$$
 
 如果看到 Trace，就自动翻译成 Log，那么后面自然会开始研究 Log Storage。
 
@@ -599,9 +599,9 @@ B+Tree、LSM-tree、WAL、MVCC、Transaction、Optimizer、Cache、Column Store�
 
 其实答案已经确定了：
 
-[
+$$
 Solution = VectorDB
-]
+$$
 
 剩下的只是寻找一个适合它的场景。
 
@@ -611,9 +611,9 @@ Solution = VectorDB
 
 也已经默认了：
 
-[
+$$
 Memory \rightarrow Database
-]
+$$
 
 然后所有创造力都被限制在这个框架中。
 
@@ -627,29 +627,29 @@ Memory \rightarrow Database
 
 这时候：
 
-[
+$$
 MemoryDB \in Solution\ Space
-]
+$$
 
 而不是：
 
-[
+$$
 MemoryDB = Solution
-]
+$$
 
 这个顺序差别非常大，因为错误的问题定义，会让整个领域非常高效地跑向错误方向。
 
 在一个成熟问题上，解决方案优化当然非常重要，但在一个新范式刚刚形成的时候，我其实更愿意相信：
 
-[
+$$
 Problem\ Discovery > Solution\ Optimization
-]
+$$
 
 不是因为优化不重要，而是：
 
-[
+$$
 把错误的问题优化1000倍
-]
+$$
 
 仍然是在解决错误的问题。
 
@@ -659,23 +659,23 @@ Problem\ Discovery > Solution\ Optimization
 
 因为我们经常使用这样一条逻辑：
 
-[
+$$
 Agent需要Memory
-]
+$$
 
-[
+$$
 Memory需要Storage
-]
+$$
 
-[
+$$
 Storage属于Database
-]
+$$
 
 所以：
 
-[
+$$
 Database在Agent时代非常重要
-]
+$$
 
 这当然是一个逻辑上成立的三段论，但它没有多少信息量，原因很简单：
 
